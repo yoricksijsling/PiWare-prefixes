@@ -1,9 +1,9 @@
 module PiWarePrefixes.Permutation where
 
--- Based on https://github.com/ruisb/PiGraph/blob/master/Permutation.agda
+-- Roughly based on https://github.com/ruisb/PiGraph/blob/master/Permutation.agda
 
 open import Function
-open import Data.Fin as Fin
+open import Data.Fin
 open import Data.Nat as Nat using (ℕ; zero; suc)
 open import Relation.Nullary.Core as NulCore using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
@@ -25,13 +25,14 @@ data Perm : ℕ → Set where
   ε    : Perm 0
   _◀_ : {n : ℕ} → (v : Fin (suc n)) → (σ : Perm n) → Perm (suc n)
 
+infixr 5 _◀_
 
 private
 
   bubblefrom : {n : ℕ} → Fin (suc n) → Fin n → Fin (suc n)
-  bubblefrom k m with (toℕ k) Nat.≤? (toℕ m)
-  ...              | yes _  = suc     m 
-  ...              | no  _  = inject₁ m
+  bubblefrom zero m = suc m
+  bubblefrom (suc k) zero = zero
+  bubblefrom (suc k) (suc m) = suc (bubblefrom k m)
 
 -- Remove an element from the image
 forget_at_ : {n : ℕ} → Perm (suc n) → Fin (suc n) → Perm n
@@ -43,14 +44,10 @@ forget_at_ {suc m} (v ◀ σ) (suc k) = down v ◀ forget_at_ {m} σ k
   down zero    = zero
   down (suc x) = x 
 
-putzero : ∀ {n} → Fin (suc n) → Perm n → Perm (suc n)
-putzero zero     σ = zero ◀ σ
-putzero (suc ()) ε
-putzero (suc k) (v ◀ σ) = suc v ◀ putzero k σ
-
 -- 'Using' a permutation
 _§_ : ∀ {n} → Perm n → Fin n → Fin n
 (k ◀ σ) § zero    = k
+-- (k ◀ σ) § (suc n) = inject₁ (forget k ◀ σ at # 0 § n)
 (k ◀ σ) § (suc n) = bubblefrom k (σ § n)
 
 -- Composition
@@ -63,10 +60,57 @@ i : ∀ {n} → Perm n
 i {zero}  = ε
 i {suc m} = zero ◀ i
 
+_◀*_ : ∀ {n} → Fin (suc n) → Perm n → Perm (suc n)
+zero ◀* σ = zero ◀ σ
+suc () ◀* ε
+suc k ◀* (v ◀ σ) = suc v ◀ (k ◀* σ)
+
 -- Get the inverse permutation
 _* : ∀ {n} → Perm n → Perm n
 ε *        = ε
-(v ◀ σ) * = putzero v (σ *)
+(v ◀ σ) * = v ◀* (σ *)
+
+-- A perm always contains at least one zero
+firstzero : ∀ {n} → Perm (suc n) → Fin (suc n)
+firstzero {_} (zero ◀ σ) = zero
+firstzero {zero} (suc () ◀ σ)
+firstzero {suc n} (suc v ◀ σ) = suc (firstzero σ)
+
+-- Another way of making the inverse. Easy to traverse!
+_*' : ∀ {n} → Perm n → Perm n
+_*' {zero} ε = ε
+_*' {suc n} σ = firstzero σ ◀ ((forget σ at firstzero σ) *')
+
+-----------------------------------------
+-- EXAMPLES
+
+example : Perm 6
+example = # 3 ◀ # 0 ◀ # 2 ◀ # 0 ◀ # 1 ◀ # 0 ◀ ε
+
+test-§-1 : example § (# 0) ≡ # 3
+test-§-1 = refl
+test-§-2 : example § (# 1) ≡ # 0
+test-§-2 = refl
+test-§-3 : example § (# 2) ≡ # 4
+test-§-3 = refl
+test-§-4 : example § (# 3) ≡ # 1
+test-§-4 = refl
+test-§-5 : example § (# 4) ≡ # 5
+test-§-5 = refl
+test-§-6 : example § (# 5) ≡ # 2
+test-§-6 = refl
+
+test-* : example * ≡ # 1 ◀ # 2 ◀ # 3 ◀ # 0 ◀ # 0 ◀ # 0 ◀ ε
+test-* = refl
+
+test-*-* : (example *) * ≡ example
+test-*-* = refl
+
+test-*' : example *' ≡ # 1 ◀ # 2 ◀ # 3 ◀ # 0 ◀ # 0 ◀ # 0 ◀ ε
+test-*' = refl
+
+test-*'-*' : (example *') *' ≡ example
+test-*'-*' = refl
 
 
 -----------------------------------------
@@ -74,13 +118,33 @@ _* : ∀ {n} → Perm n → Perm n
 
 open module FP {n : ℕ} = Algebra.FunctionProperties (_≡_ {A = Perm n})
 
+firstzero-◀* : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → firstzero (k ◀* σ) ≡ k
+firstzero-◀* zero σ = refl
+firstzero-◀* (suc ()) ε
+firstzero-◀* (suc k) (v ◀ σ) = cong suc (firstzero-◀* k σ)
+
+*-*' : ∀ {n} (σ : Perm n) → σ * ≡ σ *'
+*-*' ε = refl
+*-*' (v ◀ σ) with *-*' σ
+... | rec = {!!}
+
 i-* : ∀ {n} → (i {n}) * ≡ i {n}
 i-* {zero } = refl
-i-* {suc n} = cong (_◀_ zero) (i-* {n}) 
+i-* {suc n} = cong (_◀_ zero) i-*
+
+i-*' : ∀ {n} → (i {n}) * ≡ i {n}
+i-*' {zero } = refl
+i-*' {suc n} = cong (_◀_ zero) i-*'
+
+§-firstzero : ∀ {n} (σ : Perm (suc n)) → σ § firstzero σ ≡ zero
+§-firstzero {zero} (zero ◀ σ) = refl
+§-firstzero {zero} (suc () ◀ σ)
+§-firstzero {suc n} (zero ◀ σ) = refl
+§-firstzero {suc n} (suc v ◀ σ) rewrite §-firstzero σ = refl 
 
 i-§ : ∀ {n} {k : Fin n} → i § k ≡ k
 i-§ {k = zero } = refl
-i-§ {k = suc m} = cong (bubblefrom zero) i-§
+i-§ {k = suc k} = cong suc i-§
 
 forget-i≡i : ∀ {n} {k : Fin (suc n)} → forget i at k ≡ i
 forget-i≡i {_} {zero} = refl
@@ -96,62 +160,53 @@ forget-i≡i {suc n} {suc k} = cong (_◀_ zero) (forget-i≡i {k = k})
 ∙-right-identity ε = refl
 ∙-right-identity (v ◀ σ) = cong (_◀_ v) (∙-right-identity σ)
 
-forget-putzero-identity : ∀ {n} (v : Fin (suc n)) (σ : Perm n) → forget putzero v σ at v ≡ σ
-forget-putzero-identity zero σ = refl
-forget-putzero-identity (suc ()) ε
-forget-putzero-identity (suc v) (x ◀ σ) = cong (_◀_ x) (forget-putzero-identity v σ)
+∙-left-zero : LeftZero {zero} ε _∙_
+∙-left-zero ε = refl
 
-putzero-§ : ∀ {n} (v : Fin (suc n)) (σ : Perm n) → putzero v σ § v ≡ zero
-putzero-§ zero σ = refl
-putzero-§ (suc ()) ε
-putzero-§ (suc v) (x ◀ σ) rewrite putzero-§ v σ = refl
+∙-right-zero : RightZero {zero} ε _∙_
+∙-right-zero ε = refl
 
-lem3 : ∀ {n} (v : Fin (suc n)) (σ₁ σ₂ : Perm n) → putzero v σ₁ ∙ (v ◀ σ₂) ≡ zero ◀ (σ₁ ∙ σ₂)
+forget-◀*-identity : ∀ {n} (v : Fin (suc n)) (σ : Perm n) → forget v ◀* σ at v ≡ σ
+forget-◀*-identity zero σ = refl
+forget-◀*-identity (suc ()) ε
+forget-◀*-identity (suc v) (x ◀ σ) = cong (_◀_ x) (forget-◀*-identity v σ)
+
+◀*-§ : ∀ {n} (v : Fin (suc n)) (σ : Perm n) → (v ◀* σ) § v ≡ zero
+◀*-§ zero σ = refl
+◀*-§ (suc ()) ε
+◀*-§ (suc v) (x ◀ σ) rewrite ◀*-§ v σ = refl
+
+lem3 : ∀ {n} (v : Fin (suc n)) (σ₁ σ₂ : Perm n) → (v ◀* σ₁) ∙ (v ◀ σ₂) ≡ zero ◀ (σ₁ ∙ σ₂)
 lem3 zero σ₁ σ₂ = refl
 lem3 (suc ()) ε ε
-lem3 (suc v) (x ◀ σ₁) σ₂ rewrite forget-putzero-identity v σ₁ | putzero-§ v σ₁ = refl
+lem3 (suc v) (x ◀ σ₁) σ₂ rewrite forget-◀*-identity v σ₁ | ◀*-§ v σ₁ = refl
 
-∙-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
-∙-left-inverse ε = refl
-∙-left-inverse (v ◀ σ) rewrite sym (∙-left-inverse σ) = lem3 v (σ *) σ
+∙-*-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
+∙-*-left-inverse ε = refl
+∙-*-left-inverse (v ◀ σ) rewrite sym (∙-*-left-inverse σ) = lem3 v (σ *) σ
 
--- FALSE
--- lem4 : ∀ {n} (k : Fin (suc n)) (σ₁ σ₂ : Perm n) → (k ◀ σ₁) ∙ putzero k (σ₂) ≡ zero ◀ (σ₁ ∙ σ₂)
+∙-*'-right-inverse : ∀ {n} → RightInverse {n} i _*' _∙_
+∙-*'-right-inverse ε = refl
+∙-*'-right-inverse (v ◀ σ) rewrite §-firstzero (v ◀ σ) | ∙-*'-right-inverse (forget v ◀ σ at firstzero (v ◀ σ)) = refl
 
+firstzero-*'-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → firstzero ((k ◀ σ) *') ≡ k
+firstzero-*'-identity zero σ = refl
+firstzero-*'-identity (suc ()) ε
+firstzero-*'-identity (suc k) (v ◀ σ) = cong suc (firstzero-*'-identity k (forget v ◀ σ at firstzero (v ◀ σ)))
 
--- A perm always contains at least one zero
-firstzero : ∀ {n} → Perm (suc n) → Fin (suc n)
-firstzero {n} (zero ◀ σ) = zero
-firstzero {zero} (suc () ◀ σ)
-firstzero {suc n} (suc v ◀ σ) = suc (firstzero σ)
+--lem5 : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → (forget firstzero (k ◀ σ) ◀ (forget k ◀ σ at firstzero (k ◀ σ)) *' at k) ≡ σ *'
+forget-*'-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → (forget (k ◀ σ) *' at k) ≡ σ *'
+forget-*'-identity zero σ = refl
+forget-*'-identity (suc ()) ε
+forget-*'-identity (suc k) (v ◀ σ) = cong (_◀_ (firstzero (v ◀ σ))) (forget-*'-identity k (forget v ◀ σ at firstzero (v ◀ σ)))
 
-firstzero-putzero : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → firstzero (putzero k σ) ≡ k
-firstzero-putzero zero σ = refl
-firstzero-putzero (suc ()) ε
-firstzero-putzero (suc k) (v ◀ σ) = cong suc (firstzero-putzero k σ)
+*'-involutive : ∀ {n} → Involutive {n} _*'
+*'-involutive ε = refl
+*'-involutive (v ◀ σ) rewrite firstzero-*'-identity v σ | forget-*'-identity v σ = cong (_◀_ v) (*'-involutive σ)
 
---what is the first element of an inversed perm ?
---  the position where the first 0 was in the original perm ?
-
-lem4 : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → (k ◀ σ) ∙ putzero k (σ *) ≡ zero ◀ (σ ∙ (σ *))
-lem4 zero σ = refl
-lem4 (suc ()) ε
-lem4 (suc k) σ = {!!}
--- lem4 (suc k) σ with σ *
--- lem4 (suc ()) σ | ε
--- lem4 (suc k) σ | x ◀ si = {!!}
--- lem4 (suc k) σ | x ◀ si with (toℕ (suc k)) Nat.≤? (toℕ (σ § x))
--- lem4 (suc k) σ | x ◀ si | yes p = {!!}
--- lem4 (suc k) σ | x ◀ si | no ¬p = {!!}
-
-∙-right-inverse : ∀ {n} → RightInverse {n} i _* _∙_
-∙-right-inverse ε = refl
-∙-right-inverse (v ◀ σ) rewrite sym (∙-right-inverse σ) = {!!} --lem4 v σ
--- ∙-right-inverse (v ◀ σ) rewrite sym (∙-right-inverse σ) with σ *
-
--- ∙-right-inverse (v ◀ σ) with forget ((v ◀ σ) *) at v | forget-putzero-identity v (σ *) 
--- ∙-right-inverse (v ◀ ε) | ε | refl = {!!}
--- ∙-right-inverse (v ◀ σ) | x ◀ si | fpi = {!!}
+∙-*'-left-inverse : ∀ {n} → LeftInverse {n} i _*' _∙_
+∙-*'-left-inverse σ with ∙-*'-right-inverse (σ *')
+... | ri rewrite *'-involutive σ = ri
 
 -- ∙-assoc : ∀ {n} → Associative (_∙_ {n})
 -- --∙-assoc xs ys zs = {!xs!}
@@ -159,68 +214,6 @@ lem4 (suc k) σ = {!!}
 -- ∙-assoc (x ◀ xs) (y ◀ ys) (z ◀ zs) with ∙-assoc xs ys zs
 -- ... | ih = {!!}
 
-
--- p* : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → putzero k (σ *) * ≡ k ◀ σ
--- p* zero σ = {!!}
--- p* (suc ()) ε
--- p* (suc k) (v ◀ σ) with p* v σ
--- ... | rec = {!!}
--- p* (suc zero) (zero ◀ ε) | ε = refl
--- p* (suc (suc ())) (_ ◀ ε) | ε
--- p* (suc zero) (suc () ◀ ε) | ε
---p* (suc k) (v ◀ σ) | x ◀ sr = {!sr!}
--- p* (suc zero) (zero ◀ (x ◀ σ)) | zero ◀ sr = {!!}
--- p* (suc zero) (zero ◀ σ) | suc x ◀ sr = {!!} --cong (_◀_ (suc zero)) (cong (_◀_ zero) {!x!})
--- p* (suc (suc k)) (zero ◀ σ) | x ◀ sr = {!!}
--- p* (suc k) (suc v ◀ σ) | x ◀ sr = {!!}
-
--- putzero-*-lemma : ∀ {n} (k : Fin n) (σ : Perm n) → putzero (suc k) (σ *) * ≡ (suc k) ◀ σ
--- putzero-*-lemma () ε
--- putzero-*-lemma k (v ◀ σ) with σ *
-
--- putzero-*-lemma zero (zero ◀ ε) | ε = refl
--- putzero-*-lemma (suc ()) (zero ◀ ε) | ε
--- putzero-*-lemma k (suc () ◀ σ) | ε
-
--- putzero-*-lemma k (v ◀ σ) | x ◀ p = {!v!}
-
--- ∙-involutive : ∀ {n : ℕ} → Involutive (_* {n})
--- ∙-involutive {zero} ε = refl
--- ∙-involutive {suc n} (zero ◀ σ) = cong (_◀_ zero) (∙-involutive σ)
--- -- ∙-involutive {suc n} (suc v ◀ σ) = {!!}
--- ∙-involutive {suc n} (suc v ◀ σ) with pp v (σ *)
---   where
---   pp : ∀ {n} (k : Fin n) (σ : Perm n) → putzero (suc k) σ * ≡ (suc k) ◀ (σ *)
---   pp () ε
---   pp zero (zero ◀ σ₁) = refl
---   pp (suc k) (zero ◀ σ₁) = {!!}
---   pp k (suc v₁ ◀ σ₁) = {!!}
-  -- pp zero σ = cong (_◀_ zero) (∙-involutive σ)
-  -- pp (suc ()) ε
-  -- pp (suc k) (v ◀ σ) with pp v σ -- cong _* (pp v σ)
-  -- ... | a = {!!} --rewrite ∙-involutive (putzero v (σ *)) = {!!} 
--- ... | a rewrite ∙-involutive σ = a
-
--- ∙-involutive {suc n} (v ◀ σ) with ∙-involutive {n} σ
--- ∙-involutive {suc n} (zero ◀ σ) | ih = cong (_◀_ zero) ih
--- ∙-involutive {suc .0} (suc () ◀ ε) | ih
--- ∙-involutive {suc ._} (suc v₁ ◀ (v₂ ◀ σ)) | ih = {!!}
-
---∙-§ : {n : ℕ} {σ₁ σ₂ : Perm n} {k : Fin n} → (σ₁ ∙ σ₂) § k ≡ σ₁ § (σ₂ § k)
---∙-§  {zero } {ε}  {ε}       {()} 
---∙-§  {suc n} {σ₁} {v ◀ σ₂} {zero } = ?
---∙-§  {suc n} {σ₁} {v ◀ σ₂} {suc k} = cong ? (∙-§ {n} {forget σ₁ at v} {σ₂} {k})
-
---∙-§  {suc n} {σ₁} {v ◀ σ₂} {k} = cong (?) (∙-§ {n} {forget σ₁ at v} {σ₂} {?})
-
 --∙-assoc : {n : ℕ} {σ₁ σ₂ σ₃ : Perm n} → (σ₁ ∙ σ₂) ∙ σ₃ ≡ σ₁ ∙ (σ₂ ∙ σ₃)
 --∙-assoc {zero } {ε} {ε} {ε} = refl
 --∙-assoc {suc m} {σ₁} {σ₂} {v ◀ σ₃'} = cong (?) (∙-assoc {m} {forget σ₁ at (σ₂ § v)} {forget σ₂ at v} {σ})
-
---∙-linv : {n : ℕ} {σ : Perm n} → σ * ∙ σ ≡ i
---∙-linv {zero } {ε}      = refl
---∙-linv {suc n} {v ◀ σ} = ? (∙-linv {n} {σ})
-
--- ∙-rinv : {n : ℕ} {σ : Perm n} → σ ∙ σ * ≡ i
--- ∙-rinv {zero } {ε}      = refl
--- ∙-rinv {suc n} {v ◀ σ} = {!!} (∙-rinv {n} {σ})
