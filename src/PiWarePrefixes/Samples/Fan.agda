@@ -8,7 +8,7 @@ open import Data.Product using (proj₂)
 open import Data.Vec using (Vec; map) renaming (_∷_ to _◁_; [] to ε)
 
 open import PiWarePrefixes.Gates.Plus using (Plus; Plus#)
-open import PiWare.Circuit.Core Plus using (ℂ'; Nil; Gate; _⟫'_; _|'_; comb')
+open import PiWare.Circuit.Core Plus using (ℂ'; Anyℂ'; CombSeq; Comb; Nil; Gate; _⟫'_; _|'_)
 open import PiWarePrefixes.Patterns.Core Plus using (zipWith')
 open import PiWare.Plugs.Core Plus using (pFork'; pid')
 
@@ -18,24 +18,24 @@ open import PiWare.Simulation.Core Plus using (⟦_⟧')
 
 open import Data.Nat.Properties.Simple using (+-right-identity; *-comm)
 
-ℂ=' : ℕ -> Set
-ℂ=' n = ℂ' n n
+ℂ=' : {cs : CombSeq} → ℕ → Set
+ℂ=' {cs} n = ℂ' {cs} n n
 
-fan' : ∀ {n} → ℂ' 2 1 → ℂ=' n
+fan' : ∀ {n cs} → ℂ' {cs} 2 1 → ℂ=' {cs} n
 fan' {zero} +ℂ = Nil
 fan' {suc n} +ℂ with zipWith' {2} {n} +ℂ
 fan' {suc n} +ℂ | z rewrite (+-right-identity) n = pForkFirst'
                                                 ⟫' pid' {1} |' z
   where
-  fork1 : ∀ k → ℂ' 1 k
-  fork1 k with pFork' {k} {1}
+  fork1 : ∀ k → Anyℂ' 1 k
+  fork1 k {cs} with pFork' {k} {1} {cs}
   fork1 k | forked rewrite *-comm k 1 | +-right-identity k = forked
 
-  pForkFirst' : ∀ {n} → ℂ' (suc n) (suc (n + n))
+  pForkFirst' : ∀ {n} → Anyℂ' (suc n) (suc (n + n))
   pForkFirst' {n} = fork1 (suc n) |' (pid' {n})
 
-ex : ∀ {i o} → (c : ℂ' i o) → {p : comb' c} → Vec (Fin 256) i → Vec ℕ o
-ex c {p} = map toℕ ∘ ⟦ c ⟧' {p}
+ex : ∀ {i o} → (c : ℂ' {Comb} i o) → Vec (Fin 256) i → Vec ℕ o
+ex c = map toℕ ∘ ⟦ c ⟧'
 
 ev3 : Vec ℕ 3
 ev3 = ex (fan' (Gate Plus#)) (# 2 ◁ # 3 ◁ # 4 ◁ ε)

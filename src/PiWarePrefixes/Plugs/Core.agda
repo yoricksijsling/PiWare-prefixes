@@ -12,7 +12,7 @@ open import Data.Unit using (tt)
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (False; fromWitnessFalse)
 
-open import PiWare.Circuit.Core Gt using (ℂ'; Plug; _Named_)
+open import PiWare.Circuit.Core Gt using (Anyℂ'; Plug; _Named_)
 
 open import Data.Nat.Properties.Simple using (*-right-zero)
 
@@ -21,10 +21,10 @@ open import Data.Nat.Properties.Simple using (*-right-zero)
 ≢0-*-≢0 (suc n) zero _ ()
 ≢0-*-≢0 (suc n) (suc m) _ _ = tt
 
-pZip' : ∀ {k n} → ℂ' (k * n) (n * k)
+pZip' : ∀ {k n} → Anyℂ' (k * n) (n * k)
 pZip' {k} {n} = p k n
   where
-  p : ∀ k n → ℂ' (k * n) (n * k)
+  p : ∀ k n → Anyℂ' (k * n) (n * k)
   p k n with k ≟ 0 | n ≟ 0
   p k n | yes k≡0 | _        rewrite k≡0 | *-right-zero n = Plug id
   p k n | no k≢0  | yes n≡0  rewrite n≡0 | *-right-zero k = Plug id
