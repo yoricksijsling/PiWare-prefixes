@@ -189,33 +189,31 @@ forget-i≡i {suc n} (suc k) rewrite forget-i≡i k = refl
 *-∙-right-inverse (v ◀ σ) rewrite §-firstzero (v ◀ σ)
                                 | *-∙-right-inverse (forget v ◀ σ at firstzero (v ◀ σ)) = refl
 
--- firstzero-*-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → firstzero ((k ◀ σ) *) ≡ k
--- firstzero-*-identity zero σ = refl
--- firstzero-*-identity (suc ()) ε
--- firstzero-*-identity (suc k) (zero ◀ σ) rewrite firstzero-*-identity k σ = refl
--- firstzero-*-identity (suc k) (suc v ◀ σ) with firstzero-*-identity k σ
--- ... | p  = {!!}
+firstzero-*-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → firstzero ((k ◀ σ) *) ≡ k
+firstzero-*-identity zero σ = refl
+firstzero-*-identity (suc ()) ε
+firstzero-*-identity (suc k) (v ◀ σ)
+  rewrite §-firstzero (v ◀ σ)
+        | firstzero-*-identity k (forget v ◀ σ at firstzero (v ◀ σ)) = refl
 
--- §-*-zero : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → (k ◀ σ) * § k ≡ zero
--- §-*-zero zero σ = refl
--- §-*-zero (suc ()) ε
--- §-*-zero (suc k) (v ◀ σ) = {!!}
+§-*-zero : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → (k ◀ σ) * § k ≡ zero
+§-*-zero k σ with §-firstzero ((k ◀ σ) *)
+... | p rewrite firstzero-*-identity k σ = p
 
--- forget-*-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → forget (k ◀ σ) * at k ≡ σ *
--- forget-*-identity zero σ = refl
--- forget-*-identity (suc ()) ε
--- forget-*-identity (suc k) (v ◀ σ) with forget-*-identity k (forget v ◀ σ at firstzero (v ◀ σ))
--- ... | p = {!!}
+forget-*-identity : ∀ {n} (k : Fin (suc n)) (σ : Perm n) → forget (k ◀ σ) * at k ≡ σ *
+forget-*-identity zero σ = refl
+forget-*-identity (suc ()) ε
+forget-*-identity (suc k) (v ◀ σ)
+  rewrite §-firstzero (v ◀ σ)
+        | §-*-zero k (forget v ◀ σ at firstzero (v ◀ σ))
+        | forget-*-identity k (forget v ◀ σ at firstzero (v ◀ σ)) = refl
 
--- *-involutive : ∀ {n} → Involutive {n} _*
--- *-involutive ε = refl
--- *-involutive (v ◀ σ) rewrite firstzero-*-identity v σ
---                            | forget-*-identity v σ
---                            | *-involutive σ = refl
+*-involutive : ∀ {n} → Involutive {n} _*
+*-involutive ε = refl
+*-involutive (v ◀ σ) rewrite firstzero-*-identity v σ
+                           | forget-*-identity v σ
+                           | *-involutive σ = refl
 
--- *-∙-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
--- *-∙-left-inverse ε = refl
--- *-∙-left-inverse (v ◀ σ) rewrite §-*-zero v σ | forget-*-identity v σ | *-∙-left-inverse σ = refl
--- -- *-∙-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
--- -- *-∙-left-inverse σ rewrite sym (*-∙-right-inverse (σ *))
--- --                          | *-involutive σ = refl
+*-∙-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
+*-∙-left-inverse σ rewrite sym (*-∙-right-inverse (σ *))
+                         | *-involutive σ = refl
