@@ -34,3 +34,84 @@ plugCxt' (cxt ∙|'    x)   cₓ = (plugCxt' cxt cₓ) |' x
 plugCxt' (x    |+'∙ cxt)  cₓ = x |+' (plugCxt' cxt cₓ)
 plugCxt' (cxt ∙|+'    x)  cₓ = (plugCxt' cxt cₓ) |+' x
 plugCxt' (cxt ∙Named s)   cₓ = (plugCxt' cxt cₓ) Named s
+
+
+
+---- Paths
+
+-- open import Function
+-- open import Data.Empty
+-- open import Data.Maybe
+-- open import Data.Product
+-- open import Data.Sum
+-- open import Data.Unit
+-- open import Data.Fin using (Fin; #_)
+
+-- data Direction : Fin 3 → Set where
+--   down : Direction (# 1)
+--   left : Direction (# 2)
+--   right : Direction (# 2)
+
+-- holeCount : ∀ {cs i o} → ℂ' {cs} i o → Fin 3
+-- holeCount Nil = # 0
+-- holeCount (Gate g#) = # 0
+-- holeCount (DelayLoop c) = # 1 
+-- holeCount (Plug f) = # 0
+-- holeCount (c ⟫' c₁) = # 2
+-- holeCount (c |' c₁) = # 2
+-- holeCount (c |+' c₁) = # 2
+-- holeCount (c Named x) = # 1
+
+-- DirectionIn : ∀ {cs i o} → ℂ' {cs} i o → Set
+-- DirectionIn = Direction ∘ holeCount
+
+-- Someℂ' : Set
+-- Someℂ' = Σ[ cs ∈ CombSeq ] Σ[ i ∈ ℕ ] Σ[ o ∈ ℕ ] (ℂ' {cs} i o)
+
+-- step : ∀ {cs₁ i₁ o₁} → (c : ℂ' {cs₁} i₁ o₁) → DirectionIn c → Someℂ'
+-- step Nil ()
+-- step (Gate g#) ()
+-- step (DelayLoop {i} {o} {l} c) down = _ , _ , _ , c
+-- step (Plug f) ()
+-- step (c₁ ⟫' c₂) left = _ , _ , _ , c₁
+-- step (c₁ ⟫' c₂) right = _ , _ , _ , c₂
+-- step (c₁ |' c₂) left = _ , _ , _ , c₁
+-- step (c₁ |' c₂) right = _ , _ , _ , c₂
+-- step (c₁ |+' c₂) left = _ , _ , _ , c₁
+-- step (c₁ |+' c₂) right = _ , _ , _ , c₂
+-- step (c Named s) down = _ , _ , _ , c
+
+-- -- A path from c to cₓ
+-- data Path {cs : CombSeq} {i o : ℕ} (c : ℂ' {cs} i o) : ∀ {csₓ iₓ oₓ} (cₓ : ℂ' {csₓ} iₓ oₓ) → Set where
+--   here : Path c c
+--   _▷_ : (dir : DirectionIn c) →
+--         let (cs₁ , i₁ , o₁ , c₁) = step c dir in
+--         ∀ {csₓ iₓ oₓ} {cₓ : ℂ' {csₓ} iₓ oₓ} →
+--         Path c₁ cₓ → Path c cₓ
+
+-- makeCxt' : ∀ {cs i o} (c : ℂ' {cs} i o) →
+--            ∀ {csₓ iₓ oₓ} {cₓ : ℂ' {csₓ} iₓ oₓ} → Path c cₓ → Cxt' {csₓ} iₓ oₓ {cs} i o
+-- makeCxt' c here = ∙
+-- makeCxt' Nil (() ▷ path)
+-- makeCxt' (Gate g#) (() ▷ path)
+-- makeCxt' (DelayLoop c) (down ▷ path) = DelayLoop∙ (makeCxt' c path)
+-- makeCxt' (Plug f) (() ▷ path)
+-- makeCxt' (c₁ ⟫' c₂) (left ▷ path) = makeCxt' c₁ path ∙⟫' c₂
+-- makeCxt' (c₁ ⟫' c₂) (right ▷ path) = c₁ ⟫'∙ makeCxt' c₂ path
+-- makeCxt' (c₁ |' c₂) (left ▷ path) = makeCxt' c₁ path ∙|' c₂
+-- makeCxt' (c₁ |' c₂) (right ▷ path) = c₁ |'∙ makeCxt' c₂ path
+-- makeCxt' (c₁ |+' c₂) (left ▷ path) = makeCxt' c₁ path ∙|+' c₂
+-- makeCxt' (c₁ |+' c₂) (right ▷ path) = c₁ |+'∙ makeCxt' c₂ path
+-- makeCxt' (c Named s) (down ▷ path) = (makeCxt' c path) ∙Named s
+
+
+-- -- record Location {cs : CombSeq} (i o : ℕ) : Set where
+-- --   constructor location
+-- --   field
+-- --     {csₓ} : CombSeq
+-- --     {iₓ} : ℕ
+-- --     {oₓ} : ℕ
+-- --     circuit : ℂ' {csₓ} iₓ oₓ
+-- --     cxt : Cxt' {csₓ} iₓ oₓ {cs} i o
+-- -- start : ∀ {cs i o} → ℂ' {cs} i o → Location {cs} i o
+-- -- start c = location c ∙
