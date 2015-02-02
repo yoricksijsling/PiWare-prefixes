@@ -42,20 +42,20 @@ _≈⟦⟧_ {i} f g = (w : W i) → ⟦ f ⟧' w ≡ ⟦ g ⟧' w
 
 ≈⟦⟧-cong : ∀ {iₓ oₓ i o} (cxt : Cxt' iₓ oₓ i o) (f g : ℂ' iₓ oₓ) →
           f ≈⟦⟧ g → plugCxt' cxt f ≈⟦⟧ plugCxt' cxt g
-≈⟦⟧-cong ∙ f g p w = p w
-≈⟦⟧-cong (x ⟫'∙ cxt) f g p w = ≈⟦⟧-cong cxt f g p (⟦ x ⟧' w)
-≈⟦⟧-cong (cxt ∙⟫' x) f g p w rewrite ≈⟦⟧-cong cxt f g p w = refl
-≈⟦⟧-cong (_|'∙_ {i₁ = i₁} x cxt) f g p w
+≈⟦⟧-cong ● f g p w = p w
+≈⟦⟧-cong (x ⟫'● cxt) f g p w = ≈⟦⟧-cong cxt f g p (⟦ x ⟧' w)
+≈⟦⟧-cong (cxt ●⟫' x) f g p w rewrite ≈⟦⟧-cong cxt f g p w = refl
+≈⟦⟧-cong (_|'●_ {i₁ = i₁} x cxt) f g p w
         rewrite ≈⟦⟧-cong cxt f g p (proj₁ (proj₂ (splitAt i₁ w))) = refl
-≈⟦⟧-cong (_∙|'_ {i₁ = i₁} cxt x) f g p w
+≈⟦⟧-cong (_●|'_ {i₁ = i₁} cxt x) f g p w
         rewrite ≈⟦⟧-cong cxt f g p (proj₁ (splitAt i₁ w)) = refl
-≈⟦⟧-cong (_|+'∙_ {i₁ = i₁} x cxt) f g p w with untag {i₁} w
+≈⟦⟧-cong (_|+'●_ {i₁ = i₁} x cxt) f g p w with untag {i₁} w
 ... | inj₁ _ = refl
 ... | inj₂ y = ≈⟦⟧-cong cxt f g p y
-≈⟦⟧-cong (_∙|+'_ {i₁ = i₁} cxt x) f g p w with untag {i₁} w
+≈⟦⟧-cong (_●|+'_ {i₁ = i₁} cxt x) f g p w with untag {i₁} w
 ... | inj₁ y = ≈⟦⟧-cong cxt f g p y
 ... | inj₂ _ = refl
-≈⟦⟧-cong (cxt ∙Named x) f g p w = ≈⟦⟧-cong cxt f g p w
+≈⟦⟧-cong (cxt ●Named x) f g p w = ≈⟦⟧-cong cxt f g p w
 
 
 --------------------------------------------------

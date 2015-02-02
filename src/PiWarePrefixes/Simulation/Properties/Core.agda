@@ -112,10 +112,10 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≈⟦⟧ imp
 ⤚-preserves-id : ∀ {n} (xs : Vec ℕ n) → xs ⤚' pid' {n} ≡⟦⟧ pid' {sumᵥ xs + n}
 ⤚-preserves-id {n} xs = begin
   Plug to ⟫' pid' {sumᵥ xs} |' pid' {n} ⟫' Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'∙ ∙ ∙⟫' Plug from)
+    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from)
                 par-pid ⟩
   Plug to ⟫' pid' {sumᵥ xs + n} ⟫' Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (∙ ∙⟫' Plug from)
+    ≡⟦⟧⟨ ≡⟦⟧-cong (● ●⟫' Plug from)
                 (seq-right-identity (Plug to)) ⟩
   Plug to ⟫' Plug from
     ≡⟦⟧⟨ pid-plugs to-from-id ⟩
@@ -143,15 +143,15 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≈⟦⟧ imp
   Plug to ⟫'
   (pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g) ⟫'
   Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'∙ ∙ ∙⟫' Plug from) (begin
+    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from) (begin
         pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g
-          ≡⟦⟧⟨ ≡⟦⟧-cong (pid' {sumᵥ xs} |' f ⟫'∙ ∙ ∙⟫' pid' {sumᵥ xs} |' g) (pid-plugs from-to-id) ⟩
+          ≡⟦⟧⟨ ≡⟦⟧-cong (pid' {sumᵥ xs} |' f ⟫'● ● ●⟫' pid' {sumᵥ xs} |' g) (pid-plugs from-to-id) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' ⟫' pid' {sumᵥ xs} |' g
-          ≡⟦⟧⟨ ≡⟦⟧-cong (∙ ∙⟫' pid' {sumᵥ xs} |' g) (seq-right-identity _) ⟩
+          ≡⟦⟧⟨ ≡⟦⟧-cong (● ●⟫' pid' {sumᵥ xs} |' g) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' {sumᵥ xs} |' g
           ≡⟦⟧⟨ seq-par-distrib _ _ _ _ ⟩
         (pid' {sumᵥ xs} ⟫' pid' {sumᵥ xs}) |' (f ⟫' g)
-          ≡⟦⟧⟨ ≡⟦⟧-cong (∙ ∙|' (f ⟫' g)) (seq-right-identity _) ⟩
+          ≡⟦⟧⟨ ≡⟦⟧-cong (● ●|' (f ⟫' g)) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' (f ⟫' g) ∎) ⟩
   Plug to ⟫' pid' {sumᵥ xs} |' (f ⟫' g) ⟫' Plug from
     ∎
