@@ -217,3 +217,9 @@ forget-*-identity (suc k) (v ◀ σ)
 *-∙-left-inverse : ∀ {n} → LeftInverse {n} i _* _∙_
 *-∙-left-inverse σ rewrite sym (*-∙-right-inverse (σ *))
                          | *-involutive σ = refl
+
+§-right-inverse : ∀ {n} (σ : Perm n) → ∀ x → σ § (σ * § (x)) ≡ x
+§-right-inverse σ x rewrite sym (∙-§ σ (σ *) x) | *-∙-right-inverse σ = i-§ x
+
+§-left-inverse : ∀ {n} (σ : Perm n) → ∀ x → σ * § (σ § (x)) ≡ x
+§-left-inverse σ x rewrite sym (∙-§ (σ *) σ x) | *-∙-left-inverse σ = i-§ x
