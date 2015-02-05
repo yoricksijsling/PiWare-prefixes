@@ -16,7 +16,11 @@ open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWare.Simulation.Core Gt
 open import PiWare.Synthesizable At using (W; untag)
 
--- Low-level equivalence up to combinational evaluation
+
+--------------------------------------------------------------------------------
+-- Low-level equivalence
+
+-- Evaluational equivalence in the simplest way
 infix 4 _≡e_
 _≡e_ : ∀ {i o} (f g : ℂ' {Comb} i o) → Set
 _≡e_ {i} f g = (w : W i) → ⟦ f ⟧' w ≡ ⟦ g ⟧' w
@@ -52,126 +56,90 @@ _≡e_ {i} f g = (w : W i) → ⟦ f ⟧' w ≡ ⟦ g ⟧' w
 -- Wrap the equivalence in a data type to make agda not evaluate the equality.
 -- That way agda keeps more information on what circuits are actually on both
 -- sides.
+
+-- maybe move this somewhere else
+coerceℂ' : ∀ {cs i₁ o₁ i₂ o₂} → i₁ ≡ i₂ → o₁ ≡ o₂ → ℂ' {cs} i₁ o₁ → ℂ' {cs} i₂ o₂
+coerceℂ' p q c rewrite p | q = c
+
+
+-- Heterogeneous in the circuit size.
+-- We need the proofs as indices on this data type, because we need this
+-- information on the type level. You can't define a type for an equality in
+-- which the sizes are `really` not equal.
+data ≈⟦⟧ {i₁ o₁ i₂ o₂ : ℕ} :
+     (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
+     (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set where
+  Mk≈⟦⟧ : {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
+          (f≡g : coerceℂ' pi po f ≡e g) → ≈⟦⟧ pi po f g
+
+-- A restricted variant of the equality for circuits of the same size.
 infix 4 _≡⟦⟧_
-data _≡⟦⟧_ {i o : ℕ} (f g : ℂ' i o) : Set where
-  from-≡e : (f≡g : f ≡e g) → f ≡⟦⟧ g
+_≡⟦⟧_ : ∀ {i o} (f g : ℂ' {Comb} i o) → Set
+f ≡⟦⟧ g = ≈⟦⟧ refl refl f g
 
-≡⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≡⟦⟧ f
-≡⟦⟧-refl = from-≡e (λ w → refl)
+Mk≡⟦⟧ : ∀ {i o} {f : ℂ' i o} {g : ℂ' i o} (f≡g : f ≡e g) → f ≡⟦⟧ g
+Mk≡⟦⟧ p = Mk≈⟦⟧ refl refl p
 
-≡⟦⟧-sym : ∀ {i o} {f g : ℂ' i o} → f ≡⟦⟧ g → g ≡⟦⟧ f
-≡⟦⟧-sym (from-≡e f≡g) = from-≡e (λ w → sym (f≡g w))
 
-≡⟦⟧-trans : ∀ {i o} {f g h : ℂ' i o} → f ≡⟦⟧ g → g ≡⟦⟧ h → f ≡⟦⟧ h
-≡⟦⟧-trans (from-≡e f≡g) (from-≡e g≡h) = from-≡e (λ w → trans (f≡g w) (g≡h w))
+--------------------------------------------------------------------------------
+-- Basic properties of ≈⟦⟧
+
+≈⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≡⟦⟧ f
+≈⟦⟧-refl = Mk≈⟦⟧ refl refl (λ w → refl)
+
+≈⟦⟧-sym : ∀ {i₁ o₁ i₂ o₂ pi po} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
+          ≈⟦⟧ pi po f g → ≈⟦⟧ (sym pi) (sym po) g f
+≈⟦⟧-sym (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (λ w → sym (f≡g w))
+
+≈⟦⟧-trans : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃}
+            {fgi : i₁ ≡ i₂} {fgo : o₁ ≡ o₂} {ghi : i₂ ≡ i₃} {gho : o₂ ≡ o₃} →
+            ≈⟦⟧ fgi fgo f g → ≈⟦⟧ ghi gho g h →
+            ≈⟦⟧ (trans fgi ghi) (trans fgo gho) f h
+≈⟦⟧-trans (Mk≈⟦⟧ refl refl f≡g) (Mk≈⟦⟧ refl refl g≡h) = Mk≈⟦⟧ refl refl (λ w → trans (f≡g w) (g≡h w))
+
+≈⟦⟧-cong : ∀ {iₓ oₓ i o igₓ ogₓ} (cxt : Cxt' iₓ oₓ i o) →
+             {f : ℂ' iₓ oₓ} {g : ℂ' igₓ ogₓ} {pi : iₓ ≡ igₓ} {po : oₓ ≡ ogₓ} →
+             ≈⟦⟧ pi po f g →
+             plugCxt' cxt f ≡⟦⟧ plugCxt' cxt (coerceℂ' (sym pi) (sym po) g)
+≈⟦⟧-cong cxt {f} {g} (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (≡e-cong cxt f g f≡g)
+
+
+--------------------------------------------------------------------------------
+-- Reasoning for ≡⟦⟧
+
+-- The setoid only works for the restricted variant, because we have to pick the
+-- i and o. Maybe a ≈⟦⟧-setoid is possible with indexed setoids?
 
 ≡⟦⟧-setoid : (i o : ℕ) → Setoid _ _
 ≡⟦⟧-setoid i o = record
   { Carrier = ℂ' i o
   ; _≈_ = _≡⟦⟧_
   ; isEquivalence = record
-    { refl = ≡⟦⟧-refl
-    ; sym = ≡⟦⟧-sym
-    ; trans = ≡⟦⟧-trans
-    }
-  }
-
-≡⟦⟧-cong : ∀ {iₓ oₓ i o} (cxt : Cxt' iₓ oₓ i o) {f g : ℂ' iₓ oₓ} →
-          f ≡⟦⟧ g → plugCxt' cxt f ≡⟦⟧ plugCxt' cxt g
-≡⟦⟧-cong cxt {f} {g} (from-≡e f≡g) = from-≡e (≡e-cong cxt f g f≡g)
-
-
-
--- --------------------------------------------------------------------------------
--- -- Heterogenous on top of high-level
-
--- resize : ∀ {cs i₁ o₁ i₂ o₂} → i₁ ≡ i₂ → o₁ ≡ o₂ → ℂ' {cs} i₁ o₁ → ℂ' {cs} i₂ o₂
--- resize p q c rewrite p | q = c
-
--- data ≈⟦⟧-with-proofs {i₁ o₁ i₂ o₂ : ℕ} :
---      (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
---      (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set where
---   Mk≈⟦⟧ : {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
---           (f≡g : resize pi po f ≡⟦⟧ g) → ≈⟦⟧-with-proofs pi po f g
-
--- _≈⟦⟧_ : ∀ {i o} (f g : ℂ' {Comb} i o) → Set
--- f ≈⟦⟧ g = ≈⟦⟧-with-proofs refl refl f g
-
--- ≈⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≈⟦⟧ f
--- ≈⟦⟧-refl = Mk≈⟦⟧ refl refl ≡⟦⟧-refl
-
--- ≈⟦⟧-sym : ∀ {i₁ o₁ i₂ o₂ pi po} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
---           ≈⟦⟧-with-proofs pi po f g → ≈⟦⟧-with-proofs (sym pi) (sym po) g f
--- ≈⟦⟧-sym (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (≡⟦⟧-sym f≡g)
-
--- ≈⟦⟧-trans : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃}
---             {fgi : i₁ ≡ i₂} {fgo : o₁ ≡ o₂} {ghi : i₂ ≡ i₃} {gho : o₂ ≡ o₃} →
---             ≈⟦⟧-with-proofs fgi fgo f g → ≈⟦⟧-with-proofs ghi gho g h →
---             ≈⟦⟧-with-proofs (trans fgi ghi) (trans fgo gho) f h
--- ≈⟦⟧-trans (Mk≈⟦⟧ refl refl f≡g) (Mk≈⟦⟧ refl refl g≡h) = Mk≈⟦⟧ refl refl (≡⟦⟧-trans f≡g g≡h)
-
--- ≈⟦⟧-cong : ∀ {iₓ oₓ i o igₓ ogₓ} (cxt : Cxt' iₓ oₓ i o) →
---              {f : ℂ' iₓ oₓ} {g : ℂ' igₓ ogₓ} {pi : iₓ ≡ igₓ} {po : oₓ ≡ ogₓ} →
---              ≈⟦⟧-with-proofs pi po f g →
---              plugCxt' cxt f ≈⟦⟧ plugCxt' cxt (resize (sym pi) (sym po) g)
--- ≈⟦⟧-cong cxt (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (≡⟦⟧-cong cxt f≡g)
-
--- ≈⟦⟧-setoid : (i o : ℕ) → Setoid _ _
--- ≈⟦⟧-setoid i o = record
---   { Carrier = ℂ' i o
---   ; _≈_ = ≈⟦⟧-with-proofs _ _
---   ; isEquivalence = record
---     { refl = ≈⟦⟧-refl
---     ; sym = ≈⟦⟧-sym
---     ; trans = ≈⟦⟧-trans
---     }
---   }
-
---------------------------------------------------------------------------------
--- Make high-level itself heterogeneous
-
-resize : ∀ {cs i₁ o₁ i₂ o₂} → i₁ ≡ i₂ → o₁ ≡ o₂ → ℂ' {cs} i₁ o₁ → ℂ' {cs} i₂ o₂
-resize p q c rewrite p | q = c
-
-data ≈⟦⟧-with-proofs {i₁ o₁ i₂ o₂ : ℕ} :
-     (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
-     (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set where
-  Mk≈⟦⟧ : {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
-          (f≡g : resize pi po f ≡e g) → ≈⟦⟧-with-proofs pi po f g
-
-infix 4 _≈⟦⟧_
-_≈⟦⟧_ : ∀ {i o} (f g : ℂ' {Comb} i o) → Set
-f ≈⟦⟧ g = ≈⟦⟧-with-proofs refl refl f g
-
-≈⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≈⟦⟧ f
-≈⟦⟧-refl = Mk≈⟦⟧ refl refl (λ w → refl)
-
-≈⟦⟧-sym : ∀ {i₁ o₁ i₂ o₂ pi po} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
-          ≈⟦⟧-with-proofs pi po f g → ≈⟦⟧-with-proofs (sym pi) (sym po) g f
-≈⟦⟧-sym (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (λ w → sym (f≡g w))
-
-≈⟦⟧-trans : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃}
-            {fgi : i₁ ≡ i₂} {fgo : o₁ ≡ o₂} {ghi : i₂ ≡ i₃} {gho : o₂ ≡ o₃} →
-            ≈⟦⟧-with-proofs fgi fgo f g → ≈⟦⟧-with-proofs ghi gho g h →
-            ≈⟦⟧-with-proofs (trans fgi ghi) (trans fgo gho) f h
-≈⟦⟧-trans (Mk≈⟦⟧ refl refl f≡g) (Mk≈⟦⟧ refl refl g≡h) = Mk≈⟦⟧ refl refl (λ w → trans (f≡g w) (g≡h w))
-
-≈⟦⟧-cong : ∀ {iₓ oₓ i o igₓ ogₓ} (cxt : Cxt' iₓ oₓ i o) →
-             {f : ℂ' iₓ oₓ} {g : ℂ' igₓ ogₓ} {pi : iₓ ≡ igₓ} {po : oₓ ≡ ogₓ} →
-             ≈⟦⟧-with-proofs pi po f g →
-             plugCxt' cxt f ≈⟦⟧ plugCxt' cxt (resize (sym pi) (sym po) g)
-≈⟦⟧-cong cxt {f} {g} (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (≡e-cong cxt f g f≡g)
-
-≈⟦⟧-setoid : (i o : ℕ) → Setoid _ _
-≈⟦⟧-setoid i o = record
-  { Carrier = ℂ' i o
-  ; _≈_ = _≈⟦⟧_
-  ; isEquivalence = record
     { refl = ≈⟦⟧-refl
     ; sym = ≈⟦⟧-sym
     ; trans = ≈⟦⟧-trans
     }
   }
+
+module ≡⟦⟧-Reasoning {i o : ℕ} where
+  private
+    import Relation.Binary.EqReasoning
+    module EqR {i o : ℕ} = Relation.Binary.EqReasoning (≡⟦⟧-setoid i o)
+      -- hiding (_≡⟨_⟩_; _≡⟨⟩_)
+      renaming (_≈⟨_⟩_ to _≡⟦⟧⟨_⟩_)
+
+  open EqR {i} {o} public
+
+  -- infixr 2 _≡e⟨_⟩_
+  -- _≡e⟨_⟩_ : ∀ x {y z} → x ≡e y → y IsRelatedTo z → x IsRelatedTo z
+  -- x ≡e⟨ x≡y ⟩ y~z = x ≡⟦⟧⟨ from-≡e x≡y ⟩ y~z
+
+
+--------------------------------------------------------------------------------
+-- Heteregeneous low level equivalence
+
+-- This one is useful to construct proofs for heterogeneous stuff on the low
+-- level. _≈e_ is isomorphic with ≈⟦⟧ p q.
 
 private
   import Data.Vec.Equality
@@ -183,25 +151,13 @@ _≈e_ {i₁} {i₂ = i₂} f g = {w₁ : W i₁} {w₂ : W i₂} (p : w₁ VE.�
 
 ≈⟦⟧-to-≈e : ∀ {i₁ o₁ i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
      {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
-     ≈⟦⟧-with-proofs pi po f g → f ≈e g
+     ≈⟦⟧ pi po f g → f ≈e g
 ≈⟦⟧-to-≈e refl refl (Mk≈⟦⟧ .refl .refl f≡g) w≈w with (VE.to-≡ w≈w)
 ... | w≡w rewrite w≡w = VE.from-≡ (f≡g _)
 
 ≈e-to-≈⟦⟧ : ∀ {i₁ o₁ i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
       {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
-      f ≈e g → ≈⟦⟧-with-proofs pi po f g
+      f ≈e g → ≈⟦⟧ pi po f g
 ≈e-to-≈⟦⟧ refl refl ≈e = Mk≈⟦⟧ refl refl (λ w → VE.to-≡ (≈e (VE.from-≡ refl)))
 
 
-module ≡⟦⟧-Reasoning {i o : ℕ} where
-  private
-    import Relation.Binary.EqReasoning
-    module EqR {i o : ℕ} = Relation.Binary.EqReasoning (≡⟦⟧-setoid i o)
-      -- hiding (_≡⟨_⟩_; _≡⟨⟩_)
-      renaming (_≈⟨_⟩_ to _≡⟦⟧⟨_⟩_)
-
-  open EqR {i} {o} public
-
-  infixr 2 _≡e⟨_⟩_
-  _≡e⟨_⟩_ : ∀ x {y z} → x ≡e y → y IsRelatedTo z → x IsRelatedTo z
-  x ≡e⟨ x≡y ⟩ y~z = x ≡⟦⟧⟨ from-≡e x≡y ⟩ y~z

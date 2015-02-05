@@ -33,7 +33,7 @@ private
 -- Named
 
 named-identity : ∀ {i o s} (f : ℂ' i o) → f Named s ≡⟦⟧ f
-named-identity f = from-≡e (λ w → refl)
+named-identity f = Mk≡⟦⟧ (λ w → refl)
 
 ----------------------------------------------------
 -- Plugs
@@ -48,15 +48,15 @@ private
   tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p ∘ suc)) = refl
 
 plug-∘ : ∀ {i j o} (f : Fin j → Fin i) (g : Fin o → Fin j) → Plug f ⟫' Plug g ≡⟦⟧ Plug (f ∘ g)
-plug-∘ f g = from-≡e $ λ w →
+plug-∘ f g = Mk≡⟦⟧ $ λ w →
   tabulate-extensionality (λ fin → lookup∘tabulate (λ fin₁ → lookup (f fin₁) w) (g fin))
 
 plug-extensionality : ∀ {i o} {f : Fin o → Fin i} {g : Fin o → Fin i} → (∀ x → f x ≡ g x) → Plug f ≡⟦⟧ Plug g
-plug-extensionality p = from-≡e $ λ w →
+plug-extensionality p = Mk≡⟦⟧ $ λ w →
   tabulate-extensionality (cong (flip lookup w) ∘ p)
 
 pid-plugs : ∀ {i o} {f : Fin o → Fin i} {g : Fin i → Fin o} → (∀ x → f (g x) ≡ x) → Plug f ⟫' Plug g ≡⟦⟧ pid' {i}
-pid-plugs {f = f} {g} p = ≡⟦⟧-trans (plug-∘ f g) (≡⟦⟧-trans (plug-extensionality p) (≡⟦⟧-sym (named-identity _)))
+pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (≈⟦⟧-trans (plug-extensionality p) (≈⟦⟧-sym (named-identity _)))
 
 
 ----------------------------------------------------
@@ -64,15 +64,15 @@ pid-plugs {f = f} {g} p = ≡⟦⟧-trans (plug-∘ f g) (≡⟦⟧-trans (plug-
 
 -- f ⟫ id ≡ f
 seq-right-identity : ∀ {i o} (f : ℂ' i o) → f ⟫' pid' ≡⟦⟧ f
-seq-right-identity f = from-≡e $ λ w → pid-id (⟦ f ⟧' w)
+seq-right-identity f = Mk≡⟦⟧ $ λ w → pid-id (⟦ f ⟧' w)
 
 -- id ⟫ f ≡ f
 seq-left-identity : ∀ {i o} (f : ℂ' i o) → pid' ⟫' f ≡⟦⟧ f
-seq-left-identity f = from-≡e $ λ w → cong ⟦ f ⟧' (pid-id w)
+seq-left-identity f = Mk≡⟦⟧ $ λ w → cong ⟦ f ⟧' (pid-id w)
 
 -- (f ⟫ g) ⟫ h ≡ f ⟫ (g ⟫ h)
 seq-assoc : ∀ {i m n o} (f : ℂ' i m) (g : ℂ' m n) (h : ℂ' n o) → f ⟫' g ⟫' h ≡⟦⟧ f ⟫' (g ⟫' h)
-seq-assoc f g h = from-≡e $ λ w → refl
+seq-assoc f g h = Mk≡⟦⟧ $ λ w → refl
 
 
 ----------------------------------------------------
@@ -80,10 +80,10 @@ seq-assoc f g h = from-≡e $ λ w → refl
 
 -- id{0} || f ≡ f
 par-left-identity : ∀ {i o} (f : ℂ' i o) → pid' {0} |' f ≡⟦⟧ f
-par-left-identity f = from-≡e (λ w → refl)
+par-left-identity f = Mk≡⟦⟧ (λ w → refl)
 
 -- f || id{0} ≡ f
-par-right-identity : {i o : ℕ} (f : ℂ' i o) → ≈⟦⟧-with-proofs (+-right-identity i) (+-right-identity o) (f |' pid' {0}) f
+par-right-identity : {i o : ℕ} (f : ℂ' i o) → ≈⟦⟧ (+-right-identity i) (+-right-identity o) (f |' pid' {0}) f
 par-right-identity {i} {o} f = ≈e-to-≈⟦⟧ _ _ (par-right-identity-≈e f)
   where
   lem₁ : ∀ {i} {xs : W (i + 0)} {ys : W i} (xs≈ys : xs VE.≈ ys) → (proj₁ (splitAt i xs)) VE.≈ ys
@@ -100,7 +100,7 @@ par-right-identity {i} {o} f = ≈e-to-≈⟦⟧ _ _ (par-right-identity-≈e f)
 
 -- id{m} || id{n} = id{m+n}
 par-pid : ∀ {n m} → pid' {n} |' pid' {m} ≡⟦⟧ pid' {n + m}
-par-pid {n} {m} = from-≡e imp
+par-pid {n} {m} = Mk≡⟦⟧ imp
   where
   imp : pid' {n} |' pid' {m} ≡e pid' {n + m}
   imp w with splitAt n w
@@ -109,7 +109,7 @@ par-pid {n} {m} = from-≡e imp
 
 -- (f₁ || f₂) ⟫ (g₁ || g₂) ≡ (f₁ ⟫ g₁) || (f₂ ⟫ g₂)
 seq-par-distrib : ∀ {i₁ m₁ o₁ i₂ m₂ o₂} (f₁ : ℂ' i₁ m₁) (g₁ : ℂ' m₁ o₁) (f₂ : ℂ' i₂ m₂) (g₂ : ℂ' m₂ o₂) → (f₁ |' f₂) ⟫' (g₁ |' g₂) ≡⟦⟧ (f₁ ⟫' g₁) |' (f₂ ⟫' g₂)
-seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≡e imp
+seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = Mk≡⟦⟧ imp
   where
   imp : (f₁ |' f₂) ⟫' (g₁ |' g₂) ≡e (f₁ ⟫' g₁) |' (f₂ ⟫' g₂)
   imp w rewrite splitAt-++ m₁ (⟦ f₁ ⟧' (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧' (proj₁ (proj₂ (splitAt i₁ w)))) = refl
@@ -124,10 +124,10 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≡e imp
 ⤚-preserves-id : ∀ {n} (xs : Vec ℕ n) → xs ⤚' pid' {n} ≡⟦⟧ pid' {sumᵥ xs + n}
 ⤚-preserves-id {n} xs = begin
   Plug to ⟫' pid' {sumᵥ xs} |' pid' {n} ⟫' Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from)
+    ≡⟦⟧⟨ ≈⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from)
                 par-pid ⟩
   Plug to ⟫' pid' {sumᵥ xs + n} ⟫' Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (● ●⟫' Plug from)
+    ≡⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' Plug from)
                 (seq-right-identity (Plug to)) ⟩
   Plug to ⟫' Plug from
     ≡⟦⟧⟨ pid-plugs to-from-id ⟩
@@ -151,19 +151,19 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≡e imp
 ⤚-⟫-distrib' {n} xs f g = begin
   Plug to ⟫' pid' {sumᵥ xs} |' f ⟫' Plug from ⟫'
   (Plug to ⟫' pid' {sumᵥ xs} |' g ⟫' Plug from)
-    ≡⟦⟧⟨ from-≡e (λ w → refl) ⟩
+    ≡⟦⟧⟨ Mk≡⟦⟧ (λ w → refl) ⟩
   Plug to ⟫'
   (pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g) ⟫'
   Plug from
-    ≡⟦⟧⟨ ≡⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from) (begin
+    ≡⟦⟧⟨ ≈⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from) (begin
         pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g
-          ≡⟦⟧⟨ ≡⟦⟧-cong (pid' {sumᵥ xs} |' f ⟫'● ● ●⟫' pid' {sumᵥ xs} |' g) (pid-plugs from-to-id) ⟩
+          ≡⟦⟧⟨ ≈⟦⟧-cong (pid' {sumᵥ xs} |' f ⟫'● ● ●⟫' pid' {sumᵥ xs} |' g) (pid-plugs from-to-id) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' ⟫' pid' {sumᵥ xs} |' g
-          ≡⟦⟧⟨ ≡⟦⟧-cong (● ●⟫' pid' {sumᵥ xs} |' g) (seq-right-identity _) ⟩
+          ≡⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' pid' {sumᵥ xs} |' g) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' {sumᵥ xs} |' g
           ≡⟦⟧⟨ seq-par-distrib _ _ _ _ ⟩
         (pid' {sumᵥ xs} ⟫' pid' {sumᵥ xs}) |' (f ⟫' g)
-          ≡⟦⟧⟨ ≡⟦⟧-cong (● ●|' (f ⟫' g)) (seq-right-identity _) ⟩
+          ≡⟦⟧⟨ ≈⟦⟧-cong (● ●|' (f ⟫' g)) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' (f ⟫' g) ∎) ⟩
   Plug to ⟫' pid' {sumᵥ xs} |' (f ⟫' g) ⟫' Plug from
     ∎
