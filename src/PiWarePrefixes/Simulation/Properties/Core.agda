@@ -5,9 +5,11 @@ module PiWarePrefixes.Simulation.Properties.Core {At : Atomic} (Gt : Gates At) w
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat.Properties.Simple using (+-right-identity)
 open import Data.Product using (_,_; proj₁; proj₂)
-open import Data.Vec using (Vec; tabulate; lookup; splitAt)
+open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_)
                      renaming (sum to sumᵥ)
+import Data.Vec.Equality
 open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin)
 open import Function using (id; _$_; _∘_; flip)
 open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_)
@@ -22,13 +24,16 @@ open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
 
+private
+  module VE = Data.Vec.Equality.PropositionalEquality
+  module VecPropEq {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (PropEq.setoid A)
+  open VecPropEq using (xs++[]=xs)
 
 ----------------------------------------------------
 -- Named
 
 named-identity : ∀ {i o s} (f : ℂ' i o) → f Named s ≡⟦⟧ f
-named-identity f = from-≈⟦⟧ (λ w → refl)
-
+named-identity f = from-≡e (λ w → refl)
 
 ----------------------------------------------------
 -- Plugs
@@ -43,11 +48,11 @@ private
   tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p ∘ suc)) = refl
 
 plug-∘ : ∀ {i j o} (f : Fin j → Fin i) (g : Fin o → Fin j) → Plug f ⟫' Plug g ≡⟦⟧ Plug (f ∘ g)
-plug-∘ f g = from-≈⟦⟧ $ λ w →
+plug-∘ f g = from-≡e $ λ w →
   tabulate-extensionality (λ fin → lookup∘tabulate (λ fin₁ → lookup (f fin₁) w) (g fin))
 
 plug-extensionality : ∀ {i o} {f : Fin o → Fin i} {g : Fin o → Fin i} → (∀ x → f x ≡ g x) → Plug f ≡⟦⟧ Plug g
-plug-extensionality p = from-≈⟦⟧ $ λ w →
+plug-extensionality p = from-≡e $ λ w →
   tabulate-extensionality (cong (flip lookup w) ∘ p)
 
 pid-plugs : ∀ {i o} {f : Fin o → Fin i} {g : Fin i → Fin o} → (∀ x → f (g x) ≡ x) → Plug f ⟫' Plug g ≡⟦⟧ pid' {i}
@@ -59,15 +64,15 @@ pid-plugs {f = f} {g} p = ≡⟦⟧-trans (plug-∘ f g) (≡⟦⟧-trans (plug-
 
 -- f ⟫ id ≡ f
 seq-right-identity : ∀ {i o} (f : ℂ' i o) → f ⟫' pid' ≡⟦⟧ f
-seq-right-identity f = from-≈⟦⟧ $ λ w → pid-id (⟦ f ⟧' w)
+seq-right-identity f = from-≡e $ λ w → pid-id (⟦ f ⟧' w)
 
 -- id ⟫ f ≡ f
 seq-left-identity : ∀ {i o} (f : ℂ' i o) → pid' ⟫' f ≡⟦⟧ f
-seq-left-identity f = from-≈⟦⟧ $ λ w → cong ⟦ f ⟧' (pid-id w)
+seq-left-identity f = from-≡e $ λ w → cong ⟦ f ⟧' (pid-id w)
 
 -- (f ⟫ g) ⟫ h ≡ f ⟫ (g ⟫ h)
 seq-assoc : ∀ {i m n o} (f : ℂ' i m) (g : ℂ' m n) (h : ℂ' n o) → f ⟫' g ⟫' h ≡⟦⟧ f ⟫' (g ⟫' h)
-seq-assoc f g h = from-≈⟦⟧ $ λ w → refl
+seq-assoc f g h = from-≡e $ λ w → refl
 
 
 ----------------------------------------------------
@@ -75,12 +80,19 @@ seq-assoc f g h = from-≈⟦⟧ $ λ w → refl
 
 -- id{0} || f ≡ f
 par-left-identity : ∀ {i o} (f : ℂ' i o) → pid' {0} |' f ≡⟦⟧ f
-par-left-identity f = from-≈⟦⟧ (λ w → refl)
+par-left-identity f = from-≡e (λ w → refl)
 
 -- f || id{0} ≡ f
--- Should i define ≈⟦⟧ semi-heterogeneously to be abe to write this?
--- par-right-identity : ∀ {i o} (f : ℂ' i o) → f |' pid' {0} ≡⟦⟧ f
--- par-right-identity = {!!}
+par-right-identity : {i o : ℕ} (f : ℂ' i o) → ≈⟦⟧-with-proofs (+-right-identity i) (+-right-identity o) (f |' pid' {0}) f
+par-right-identity {i} {o} f = ≈e-to-≈⟦⟧ _ _ (par-right-identity-≈e f)
+  where
+  lem₁ : ∀ {i} {xs : W (i + 0)} {ys : W i} (xs≈ys : xs VE.≈ ys) → (proj₁ (splitAt i xs)) VE.≈ ys
+  lem₁ {i} {xs} xs≈ys with splitAt i xs
+  lem₁ xs≈ys | xs₁ , [] , xs≡xs₁++xs₂ = VE.trans (VE.sym (VE.trans (VE.from-≡ xs≡xs₁++xs₂) (xs++[]=xs xs₁))) xs≈ys
+
+  par-right-identity-≈e : ∀ {i o} (f : ℂ' i o) → f |' pid' {0} ≈e f
+  par-right-identity-≈e f w≈w with VE.to-≡ (lem₁ w≈w)
+  par-right-identity-≈e f {w₂ = w₂} w≈w | a rewrite a = xs++[]=xs (⟦ f ⟧' w₂)
 
 -- (f || g) || h ≡ f || (g || h)
 -- par-assoc : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} (f : ℂ' i₁ o₁) (g : ℂ' i₂ o₂) (h : ℂ' i₃ o₃) → (f |' g) |' h ≡⟦⟧ f |' (g |' h)
@@ -88,18 +100,18 @@ par-left-identity f = from-≈⟦⟧ (λ w → refl)
 
 -- id{m} || id{n} = id{m+n}
 par-pid : ∀ {n m} → pid' {n} |' pid' {m} ≡⟦⟧ pid' {n + m}
-par-pid {n} {m} = from-≈⟦⟧ imp
+par-pid {n} {m} = from-≡e imp
   where
-  imp : pid' {n} |' pid' {m} ≈⟦⟧ pid' {n + m}
+  imp : pid' {n} |' pid' {m} ≡e pid' {n + m}
   imp w with splitAt n w
   ... | vn , vm , w≡vn++vm with pid-id vn | pid-id vm | pid-id w
   ... | vn' | vm' | w' rewrite vn' | vm' | w' = sym w≡vn++vm
 
 -- (f₁ || f₂) ⟫ (g₁ || g₂) ≡ (f₁ ⟫ g₁) || (f₂ ⟫ g₂)
 seq-par-distrib : ∀ {i₁ m₁ o₁ i₂ m₂ o₂} (f₁ : ℂ' i₁ m₁) (g₁ : ℂ' m₁ o₁) (f₂ : ℂ' i₂ m₂) (g₂ : ℂ' m₂ o₂) → (f₁ |' f₂) ⟫' (g₁ |' g₂) ≡⟦⟧ (f₁ ⟫' g₁) |' (f₂ ⟫' g₂)
-seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≈⟦⟧ imp
+seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≡e imp
   where
-  imp : (f₁ |' f₂) ⟫' (g₁ |' g₂) ≈⟦⟧ (f₁ ⟫' g₁) |' (f₂ ⟫' g₂)
+  imp : (f₁ |' f₂) ⟫' (g₁ |' g₂) ≡e (f₁ ⟫' g₁) |' (f₂ ⟫' g₂)
   imp w rewrite splitAt-++ m₁ (⟦ f₁ ⟧' (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧' (proj₁ (proj₂ (splitAt i₁ w)))) = refl
 
 
@@ -139,7 +151,7 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = from-≈⟦⟧ imp
 ⤚-⟫-distrib' {n} xs f g = begin
   Plug to ⟫' pid' {sumᵥ xs} |' f ⟫' Plug from ⟫'
   (Plug to ⟫' pid' {sumᵥ xs} |' g ⟫' Plug from)
-    ≡⟦⟧⟨ from-≈⟦⟧ (λ w → refl) ⟩
+    ≡⟦⟧⟨ from-≡e (λ w → refl) ⟩
   Plug to ⟫'
   (pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g) ⟫'
   Plug from
