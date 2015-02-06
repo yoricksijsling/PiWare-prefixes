@@ -136,7 +136,7 @@ module ≡⟦⟧-Reasoning {i o : ℕ} where
 
 
 --------------------------------------------------------------------------------
--- Heteregeneous low level equivalence
+-- Heterogeneous low level equivalence
 
 -- This one is useful to construct proofs for heterogeneous stuff on the low
 -- level. _≈e_ is isomorphic with ≈⟦⟧ p q.
@@ -149,15 +149,15 @@ infix 4 _≈e_
 _≈e_ : ∀ {i₁ o₁ i₂ o₂} (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set
 _≈e_ {i₁} {i₂ = i₂} f g = {w₁ : W i₁} {w₂ : W i₂} (p : w₁ VE.≈ w₂) → ⟦ f ⟧' w₁ VE.≈ ⟦ g ⟧' w₂
 
-≈⟦⟧-to-≈e : ∀ {i₁ o₁ i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
+≈⟦⟧-to-≈e : ∀ {i₁ o₁ i₂ o₂} {pi : i₁ ≡ i₂} {po : o₁ ≡ o₂}
      {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
      ≈⟦⟧ pi po f g → f ≈e g
-≈⟦⟧-to-≈e refl refl (Mk≈⟦⟧ .refl .refl f≡g) w≈w with (VE.to-≡ w≈w)
+≈⟦⟧-to-≈e (Mk≈⟦⟧ refl refl f≡g) w≈w with (VE.to-≡ w≈w)
 ... | w≡w rewrite w≡w = VE.from-≡ (f≡g _)
 
-≈e-to-≈⟦⟧ : ∀ {i₁ o₁ i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
+≈e-to-≈⟦⟧ : ∀ {i₁ o₁ i₂ o₂} {pi : i₁ ≡ i₂} {po : o₁ ≡ o₂}
       {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
       f ≈e g → ≈⟦⟧ pi po f g
-≈e-to-≈⟦⟧ refl refl ≈e = Mk≈⟦⟧ refl refl (λ w → VE.to-≡ (≈e (VE.from-≡ refl)))
+≈e-to-≈⟦⟧ {pi = refl} {refl} ≈e = Mk≈⟦⟧ refl refl (λ w → VE.to-≡ (≈e (VE.from-≡ refl)))
 
 
