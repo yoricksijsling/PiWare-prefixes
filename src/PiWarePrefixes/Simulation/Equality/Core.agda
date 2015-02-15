@@ -4,11 +4,12 @@ open import PiWare.Gates using (Gates)
 module PiWarePrefixes.Simulation.Equality.Core {At : Atomic} (Gt : Gates At) where
 
 open import Data.Nat using (ℕ; _+_)
-open import Data.Product using (proj₁; proj₂)
+open import Data.Product using (proj₁; proj₂; _×_; uncurry; _,_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Vec using (splitAt; _++_)
 open import Function
 open import Relation.Binary
+open import Relation.Binary.Indexed as I using ()
 open import Relation.Binary.PropositionalEquality as PropEq
 
 open import PiWare.Circuit.Core Gt
@@ -66,54 +67,46 @@ coerceℂ' p q c rewrite p | q = c
 -- We need the proofs as indices on this data type, because we need this
 -- information on the type level. You can't define a type for an equality in
 -- which the sizes are `really` not equal.
-data ≈⟦⟧ {i₁ o₁ i₂ o₂ : ℕ} :
-     (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
+infix 4 _≈⟦⟧_
+data _≈⟦⟧_ {i₁ o₁ i₂ o₂ : ℕ} :
      (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set where
   Mk≈⟦⟧ : {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
-          (f≡g : coerceℂ' pi po f ≡e g) → ≈⟦⟧ pi po f g
+          (f≡g : coerceℂ' pi po f ≡e g) → _≈⟦⟧_ f g
 
--- A restricted variant of the equality for circuits of the same size.
-infix 4 _≡⟦⟧_
-_≡⟦⟧_ : ∀ {i o} (f g : ℂ' {Comb} i o) → Set
-f ≡⟦⟧ g = ≈⟦⟧ refl refl f g
+i-equal : ∀ {i₁ o₁ i₂ o₂} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
+          f ≈⟦⟧ g → i₁ ≡ i₂
+i-equal (Mk≈⟦⟧ pi po f≡g) = pi
 
-Mk≡⟦⟧ : ∀ {i o} {f : ℂ' i o} {g : ℂ' i o} (f≡g : f ≡e g) → f ≡⟦⟧ g
-Mk≡⟦⟧ p = Mk≈⟦⟧ refl refl p
+o-equal : ∀ {i₁ o₁ i₂ o₂} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
+          f ≈⟦⟧ g → o₁ ≡ o₂
+o-equal (Mk≈⟦⟧ pi po f≡g) = po
+
 
 
 --------------------------------------------------------------------------------
 -- Basic properties of ≈⟦⟧
 
-≈⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≡⟦⟧ f
+≈⟦⟧-refl : ∀ {i o} {f : ℂ' i o} → f ≈⟦⟧ f
 ≈⟦⟧-refl = Mk≈⟦⟧ refl refl (λ w → refl)
 
-≈⟦⟧-sym : ∀ {i₁ o₁ i₂ o₂ pi po} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
-          ≈⟦⟧ pi po f g → ≈⟦⟧ (sym pi) (sym po) g f
+≈⟦⟧-sym : ∀ {i₁ o₁ i₂ o₂} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} →
+          f ≈⟦⟧ g → g ≈⟦⟧ f
 ≈⟦⟧-sym (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (λ w → sym (f≡g w))
 
-≈⟦⟧-trans : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃}
-            {fgi : i₁ ≡ i₂} {fgo : o₁ ≡ o₂} {ghi : i₂ ≡ i₃} {gho : o₂ ≡ o₃} →
-            ≈⟦⟧ fgi fgo f g → ≈⟦⟧ ghi gho g h →
-            ≈⟦⟧ (trans fgi ghi) (trans fgo gho) f h
+≈⟦⟧-trans : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃} →
+            f ≈⟦⟧ g → g ≈⟦⟧ h → f ≈⟦⟧ h
 ≈⟦⟧-trans (Mk≈⟦⟧ refl refl f≡g) (Mk≈⟦⟧ refl refl g≡h) = Mk≈⟦⟧ refl refl (λ w → trans (f≡g w) (g≡h w))
 
 ≈⟦⟧-cong : ∀ {iₓ oₓ i o igₓ ogₓ} (cxt : Cxt' iₓ oₓ i o) →
-             {f : ℂ' iₓ oₓ} {g : ℂ' igₓ ogₓ} {pi : iₓ ≡ igₓ} {po : oₓ ≡ ogₓ} →
-             ≈⟦⟧ pi po f g →
-             plugCxt' cxt f ≡⟦⟧ plugCxt' cxt (coerceℂ' (sym pi) (sym po) g)
+             {f : ℂ' iₓ oₓ} {g : ℂ' igₓ ogₓ} →
+             (f≈g : f ≈⟦⟧ g) →
+             plugCxt' cxt f ≈⟦⟧ plugCxt' cxt (coerceℂ' (sym (i-equal f≈g)) (sym (o-equal f≈g)) g)
 ≈⟦⟧-cong cxt {f} {g} (Mk≈⟦⟧ refl refl f≡g) = Mk≈⟦⟧ refl refl (≡e-cong cxt f g f≡g)
 
-
---------------------------------------------------------------------------------
--- Reasoning for ≡⟦⟧
-
--- The setoid only works for the restricted variant, because we have to pick the
--- i and o. Maybe a ≈⟦⟧-setoid is possible with indexed setoids?
-
-≡⟦⟧-setoid : (i o : ℕ) → Setoid _ _
-≡⟦⟧-setoid i o = record
-  { Carrier = ℂ' i o
-  ; _≈_ = _≡⟦⟧_
+≈⟦⟧-setoid : I.Setoid (ℕ × ℕ) _ _
+≈⟦⟧-setoid = record
+  { Carrier = uncurry ℂ'
+  ; _≈_ = _≈⟦⟧_
   ; isEquivalence = record
     { refl = ≈⟦⟧-refl
     ; sym = ≈⟦⟧-sym
@@ -121,18 +114,30 @@ Mk≡⟦⟧ p = Mk≈⟦⟧ refl refl p
     }
   }
 
-module ≡⟦⟧-Reasoning {i o : ℕ} where
-  private
-    import Relation.Binary.EqReasoning
-    module EqR {i o : ℕ} = Relation.Binary.EqReasoning (≡⟦⟧-setoid i o)
-      -- hiding (_≡⟨_⟩_; _≡⟨⟩_)
-      renaming (_≈⟨_⟩_ to _≡⟦⟧⟨_⟩_)
+--------------------------------------------------------------------------------
+-- Equational reasoning
 
-  open EqR {i} {o} public
+-- Our custom equational reasoning. Eqreasoning from the standard library does
+-- not support indexed setoids.
 
-  -- infixr 2 _≡e⟨_⟩_
-  -- _≡e⟨_⟩_ : ∀ x {y z} → x ≡e y → y IsRelatedTo z → x IsRelatedTo z
-  -- x ≡e⟨ x≡y ⟩ y~z = x ≡⟦⟧⟨ from-≡e x≡y ⟩ y~z
+module ≈⟦⟧-Reasoning where
+  infix  2 _∎
+  infixr 2 _≈⟦⟧⟨_⟩_ _≈⟦⟧⟨⟩_
+  infix  1 begin_
+
+  begin_ : ∀ {i₁ o₁ i₂ o₂} {f : ℂ' i₁ o₁} {g : ℂ' i₂ o₂} → f ≈⟦⟧ g → f ≈⟦⟧ g
+  begin_ = id
+
+  _≈⟦⟧⟨_⟩_ : ∀ {i₁ o₁ i₂ o₂ i₃ o₃} (f : ℂ' i₁ o₁) {g : ℂ' i₂ o₂} {h : ℂ' i₃ o₃} →
+          f ≈⟦⟧ g → g ≈⟦⟧ h → f ≈⟦⟧ h
+  _≈⟦⟧⟨_⟩_ _ = ≈⟦⟧-trans
+
+  _≈⟦⟧⟨⟩_ : ∀ {i₁ o₁ i₂ o₂} (f : ℂ' i₁ o₁) {g : ℂ' i₂ o₂} →
+          f ≈⟦⟧ g → f ≈⟦⟧ g
+  _≈⟦⟧⟨⟩_ _ = id
+
+  _∎ : ∀ {i o} (f : ℂ' i o) → f ≈⟦⟧ f
+  _∎ _ = ≈⟦⟧-refl
 
 
 --------------------------------------------------------------------------------
@@ -149,15 +154,14 @@ infix 4 _≈e_
 _≈e_ : ∀ {i₁ o₁ i₂ o₂} (f : ℂ' {Comb} i₁ o₁) (g : ℂ' {Comb} i₂ o₂) → Set
 _≈e_ {i₁} {i₂ = i₂} f g = {w₁ : W i₁} {w₂ : W i₂} (p : w₁ VE.≈ w₂) → ⟦ f ⟧' w₁ VE.≈ ⟦ g ⟧' w₂
 
-≈⟦⟧-to-≈e : ∀ {i₁ o₁ i₂ o₂} {pi : i₁ ≡ i₂} {po : o₁ ≡ o₂}
+≈⟦⟧-to-≈e : ∀ {i₁ o₁ i₂ o₂}
      {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
-     ≈⟦⟧ pi po f g → f ≈e g
+     f ≈⟦⟧ g → f ≈e g
 ≈⟦⟧-to-≈e (Mk≈⟦⟧ refl refl f≡g) w≈w with (VE.to-≡ w≈w)
 ... | w≡w rewrite w≡w = VE.from-≡ (f≡g _)
 
-≈e-to-≈⟦⟧ : ∀ {i₁ o₁ i₂ o₂} {pi : i₁ ≡ i₂} {po : o₁ ≡ o₂}
+≈e-to-≈⟦⟧ : ∀ {i₁ o₁ i₂ o₂} (pi : i₁ ≡ i₂) (po : o₁ ≡ o₂)
       {f : ℂ' {Comb} i₁ o₁} {g : ℂ' {Comb} i₂ o₂} →
-      f ≈e g → ≈⟦⟧ pi po f g
-≈e-to-≈⟦⟧ {pi = refl} {refl} ≈e = Mk≈⟦⟧ refl refl (λ w → VE.to-≡ (≈e (VE.from-≡ refl)))
-
+      f ≈e g → f ≈⟦⟧ g
+≈e-to-≈⟦⟧ refl refl ≈e = Mk≈⟦⟧ refl refl (λ w → VE.to-≡ (≈e (VE.from-≡ refl)))
 
