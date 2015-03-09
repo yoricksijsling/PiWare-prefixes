@@ -5,18 +5,18 @@ module PiWarePrefixes.Simulation.Properties.Core {At : Atomic} (Gt : Gates At) w
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Nat.Properties.Simple using (+-right-identity; +-assoc)
+open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; +-assoc; +-comm)
 open import Data.Product using (_,_; proj₁; proj₂)
-open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_)
+open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_; head; tail)
                      renaming (sum to sumᵥ)
 import Data.Vec.Equality
 open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin)
 open import Function using (id; _$_; _∘_; flip)
-open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_)
+open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; subst; trans)
 
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWare.Circuit.Core Gt using (ℂ'; Comb; Plug; _⟫'_; _|'_; _Named_)
-open import PiWarePrefixes.Patterns.Core Gt using (_⤚'_; ⤚-perm)
+open import PiWarePrefixes.Patterns.Core Gt using (_⤚'_; ⤚-perm; _⤙'_)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs.Core Gt using (pid')
 open import PiWare.Simulation.Core Gt using (⟦_⟧')
@@ -157,22 +157,25 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ 
   where
   imp : ∀ w → ⟦ f₁ |' f₂ ⟫' g₁ |' g₂ ⟧' w ≡ ⟦ (f₁ ⟫' g₁) |' (f₂ ⟫' g₂) ⟧' w
   imp w rewrite splitAt-++ m₁ (⟦ f₁ ⟧' (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧' (proj₁ (proj₂ (splitAt i₁ w)))) = refl
-
+-- seq-par-distrib can be generalized to arbitrary width and height..
 
 ----------------------------------------------------
 -- Stretching
 
+postulate
+  ⤙-equal : ∀ {n} (f : ℂ' n n) {xs ys : Vec ℕ n} →
+             xs ≡ ys → f ⤙' xs ≈⟦⟧ f ⤙' ys
+
 -- id{#x} ⤙ x ≡ id{Σx}
--- (todo)
+postulate
+  ⤙-preserves-id : ∀ {n} (xs : Vec ℕ n) → pid' {n} ⤙' xs ≈⟦⟧ pid' {sumᵥ xs + n}
 
 ⤚-preserves-id : ∀ {n} (xs : Vec ℕ n) → xs ⤚' pid' {n} ≈⟦⟧ pid' {sumᵥ xs + n}
 ⤚-preserves-id {n} xs = begin
   Plug to ⟫' pid' {sumᵥ xs} |' pid' {n} ⟫' Plug from
---     ≈⟦⟧⟨ ≈⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from)
     ≈⟦⟧⟨ ≈⟦⟧-cong (bla ⟫'● ● ●⟫' bla)
                 par-pid ⟩
   Plug to ⟫' pid' {sumᵥ xs + n} ⟫' Plug from
---     ≈⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' Plug from)
     ≈⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' bla)
                 (seq-right-identity (Plug to)) ⟩
   Plug to ⟫' Plug from
@@ -190,7 +193,8 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ 
 
 
 -- (f ⟫ g) ⤙ x ≡ f ⤙ x ⟫ g ⤙ x
--- (todo)
+postulate
+  ⤙-⟫-distrib' : ∀ {n} (xs : Vec ℕ n) (f g : ℂ' n n) → (f ⤙' xs) ⟫' (g ⤙' xs) ≈⟦⟧ (f ⟫' g) ⤙' xs
 
 -- x ⤚ (f ⟫ g) ≡ x ⤚ f ⟫ x ⤚ g
 ⤚-⟫-distrib' : ∀ {n} (xs : Vec ℕ n) (f g : ℂ' n n) → (xs ⤚' f) ⟫' (xs ⤚' g) ≈⟦⟧ xs ⤚' (f ⟫' g)
@@ -201,18 +205,14 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ 
   Plug to ⟫'
   (pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g) ⟫'
   Plug from
-    -- ≈⟦⟧⟨ ≈⟦⟧-cong (Plug to ⟫'● ● ●⟫' Plug from) (begin
     ≈⟦⟧⟨ ≈⟦⟧-cong (bla ⟫'● ● ●⟫' bla) (begin
         pid' {sumᵥ xs} |' f ⟫' (Plug from ⟫' Plug to) ⟫' pid' {sumᵥ xs} |' g
-          -- ≈⟦⟧⟨ ≈⟦⟧-cong (pid' {sumᵥ xs} |' f ⟫'● ● ●⟫' pid' {sumᵥ xs} |' g) (pid-plugs from-to-id) ⟩
           ≈⟦⟧⟨ ≈⟦⟧-cong (bla ⟫'● ● ●⟫' bla) (pid-plugs from-to-id) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' ⟫' pid' {sumᵥ xs} |' g
-          -- ≈⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' pid' {sumᵥ xs} |' g) (seq-right-identity _) ⟩
           ≈⟦⟧⟨ ≈⟦⟧-cong (● ●⟫' bla) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' f ⟫' pid' {sumᵥ xs} |' g
           ≈⟦⟧⟨ seq-par-distrib _ _ _ _ ⟩
         (pid' {sumᵥ xs} ⟫' pid' {sumᵥ xs}) |' (f ⟫' g)
-          -- ≈⟦⟧⟨ ≈⟦⟧-cong (● ●|' (f ⟫' g)) (seq-right-identity _) ⟩
           ≈⟦⟧⟨ ≈⟦⟧-cong (● ●|' bla) (seq-right-identity _) ⟩
         pid' {sumᵥ xs} |' (f ⟫' g)
           ∎) ⟩
@@ -226,3 +226,64 @@ seq-par-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ 
   from = _§_ (⤚-perm xs *)
   from-to-id : ∀ x → from (to x) ≡ x
   from-to-id = P.§-left-inverse (⤚-perm xs)
+
+postulate
+  ⤙-||-distrib' : ∀ {n m} (xs : Vec ℕ n) (ys : Vec ℕ m)
+        (f : ℂ' {Comb} n n) (g : ℂ' {Comb} m m) →
+        (f |' g) ⤙' (xs ++ ys) ≈⟦⟧ (f ⤙' xs) |' (g ⤙' ys)
+
+  ⤚-||-distrib' : ∀ {n m} (xs : Vec ℕ n) (ys : Vec ℕ m)
+        (f : ℂ' {Comb} n n) (g : ℂ' {Comb} m m) →
+        (xs ++ ys) ⤚' (f |' g) ≈⟦⟧ (xs ⤚' f) |' (ys ⤚' g)
+
+_∷ʳ_ : ∀ {a n} {A : Set a} (xs : Vec A n) (x : A) → Vec A (suc n)
+_∷ʳ_ {n = n} xs x rewrite +-comm 1 n = xs ++ (x ∷ [])
+
+-- flip law
+postulate
+  -- stretch-flip : ∀ {i k n} (f : ℂ' (suc n) (suc n)) (ys : Vec ℕ n) →
+  --                pid' {i} |' (f ⤙' (ys ∷ʳ suc k)) ≈⟦⟧ ((suc i ∷ ys) ⤚' f) |' pid' {k}
+  stretch-flip : ∀ {i k n} (f : ℂ' (suc n) (suc n)) (ys : Vec ℕ n) →
+                 pid' {i} |' (f ⤙' (ys ∷ʳ k)) ≈⟦⟧ ((i ∷ ys) ⤚' f) |' pid' {k}
+
+-- Derived stretch law 1
+-- f ⤙ x ++ [j + k] = (f ⤙ x ++ [j]) × id{k}
+stretch-derived-1 : ∀ {n j k} (f : ℂ' (suc n) (suc n)) (xs : Vec ℕ n) →
+                    f ⤙' (xs ∷ʳ (j + k)) ≈⟦⟧ (f ⤙' (xs ∷ʳ j)) |' pid' {k}
+stretch-derived-1 {n} {j} {k} f xs = begin
+  f ⤙' (xs ∷ʳ (j + k))
+    ≈⟦⟧⟨ ≈⟦⟧-sym (par-left-identity _) ⟩
+  (pid' {0}) |' (f ⤙' (xs ∷ʳ (j + k)))
+    ≈⟦⟧⟨ stretch-flip f xs ⟩
+  (0 ∷ xs) ⤚' f |' pid' {j + k}
+    ≈⟦⟧⟨ ≈⟦⟧-cong (bla |'● ●) (≈⟦⟧-sym par-pid) ⟩
+  (0 ∷ xs) ⤚' f |' pid' {j} |' pid' {k}
+    ≈⟦⟧⟨ ≈⟦⟧-sym (par-assoc _ _ _) ⟩
+  ((0 ∷ xs) ⤚' f |' pid' {j}) |' pid' {k}
+    ≈⟦⟧⟨ ≈⟦⟧-cong (● ●|' bla) (≈⟦⟧-sym (stretch-flip f xs)) ⟩
+  (pid' {0} |' f ⤙' (xs ∷ʳ j)) |' pid' {k}
+    ≈⟦⟧⟨ ≈⟦⟧-cong (● ●|' bla) (par-left-identity _) ⟩
+  f ⤙' (xs ∷ʳ j) |' pid' {k}
+    ∎
+  where
+  open SimEq.≈⟦⟧-Reasoning
+
+-- (f × id{#y-1}) ⤙ x ++ y = f ⤙ x ++ [Σy]
+stretch-derived-2 : ∀ {n m} (f : ℂ' (suc n) (suc n)) (xs : Vec ℕ n) (ys : Vec ℕ (suc m)) →
+                    (f |' pid' {m}) ⤙' subst (Vec ℕ) (+-suc n m) (xs ++ ys)
+                      ≈⟦⟧ (f ⤙' (xs ∷ʳ (sumᵥ ys + m)))
+stretch-derived-2 {n} {m} f xs (y ∷ ys) = begin
+  (f |' pid' {m}) ⤙' subst (Vec ℕ) (+-suc n m) (xs ++ (y ∷ ys))
+    ≈⟦⟧⟨ ⤙-equal _ {!!} ⟩
+  (f |' pid' {m}) ⤙' (xs ∷ʳ y ++ ys)
+    ≈⟦⟧⟨ ⤙-||-distrib' _ _ _ _ ⟩
+  f ⤙' (xs ∷ʳ y) |' pid' {m} ⤙' ys
+    ≈⟦⟧⟨ ≈⟦⟧-cong (bla |'● ●) (⤙-preserves-id _) ⟩
+  f ⤙' (xs ∷ʳ y) |' pid' {sumᵥ ys + m}
+    ≈⟦⟧⟨ ≈⟦⟧-sym (stretch-derived-1 f xs) ⟩
+  f ⤙' (xs ∷ʳ (y + (sumᵥ ys + m)))
+    ≈⟦⟧⟨ ⤙-equal f (cong (_∷ʳ_ xs) (sym (+-assoc y (sumᵥ ys) m))) ⟩
+  f ⤙' (xs ∷ʳ (sumᵥ (y ∷ ys) + m))
+    ∎
+  where
+  open SimEq.≈⟦⟧-Reasoning

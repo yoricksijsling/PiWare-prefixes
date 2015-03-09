@@ -40,3 +40,11 @@ _⤚'_ : ∀ {n cs} → (xs : Vec ℕ n) → ℂ' {cs} n n → ℂ' {cs} (sum xs
 _⤚'_ {n} xs c = Plug (_§_ (⤚-perm xs))
               ⟫' pid' {sum xs} |' c
               ⟫' Plug (_§_ (⤚-perm xs *))
+
+postulate
+  ⤙-perm : ∀ {n} → (xs : Vec ℕ n) → Perm (sum xs + n)
+
+_⤙'_ : ∀ {n cs} → ℂ' {cs} n n → (xs : Vec ℕ n) → ℂ' {cs} (sum xs + n) (sum xs + n)
+_⤙'_ {n} c xs = Plug (_§_ (⤙-perm xs))
+              ⟫' pid' {sum xs} |' c
+              ⟫' Plug (_§_ (⤙-perm xs *))
