@@ -10,16 +10,16 @@ open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; *-comm)
 open import Data.Vec using (Vec; sum; []; _∷_)
 open import Function using (_$_)
 
-open import PiWare.Circuit.Core Gt using (ℂ'; Plug; _⟫'_; _|'_)
-open import PiWare.Patterns.Core Gt using (parsN')
+open import PiWare.Circuit Gt using (ℂ; Plug; _⟫_; _∥_)
+open import PiWare.Patterns Gt using (parsN)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; ε; _◀_; _*)
-open import PiWare.Plugs.Core Gt using (pid')
-open import PiWarePrefixes.Plugs.Core Gt using (pZip')
+open import PiWare.Plugs Gt using (id⤨)
+open import PiWarePrefixes.Plugs.Core Gt using (zip⤨)
 
 
-zipWith' : ∀ {k n cs} → ℂ' {cs} k 1 → ℂ' {cs} (k * n) (1 * n)
-zipWith' {k} {n} f with (pZip' {k} {n} ⟫' parsN' {n} f)
-zipWith' {k} {n} f | z rewrite *-comm n 1 | +-right-identity n = z
+zipWith : ∀ {k n cs} → ℂ {cs} k 1 → ℂ {cs} (k * n) (1 * n)
+zipWith {k} {n} f with (zip⤨ {k} {n} ⟫ parsN {n} f)
+zipWith {k} {n} f | z rewrite *-comm n 1 | +-right-identity n = z
 
 ⤚-perm : ∀ {n} → (xs : Vec ℕ n) → Perm (sum xs + n)
 ⤚-perm {n} xs = toPerm' 0 xs
@@ -36,15 +36,15 @@ zipWith' {k} {n} f | z rewrite *-comm n 1 | +-right-identity n = z
       i + sum (x ∷ xs) + suc n  ∎
       where open Data.Nat.≤-Reasoning
 
-_⤚'_ : ∀ {n cs} → (xs : Vec ℕ n) → ℂ' {cs} n n → ℂ' {cs} (sum xs + n) (sum xs + n)
-_⤚'_ {n} xs c = Plug (_§_ (⤚-perm xs))
-              ⟫' pid' {sum xs} |' c
-              ⟫' Plug (_§_ (⤚-perm xs *))
+_⤚_ : ∀ {n cs} → (xs : Vec ℕ n) → ℂ {cs} n n → ℂ {cs} (sum xs + n) (sum xs + n)
+_⤚_ {n} xs c = Plug (_§_ (⤚-perm xs))
+              ⟫ id⤨ {sum xs} ∥ c
+              ⟫ Plug (_§_ (⤚-perm xs *))
 
 postulate
   ⤙-perm : ∀ {n} → (xs : Vec ℕ n) → Perm (sum xs + n)
 
-_⤙'_ : ∀ {n cs} → ℂ' {cs} n n → (xs : Vec ℕ n) → ℂ' {cs} (sum xs + n) (sum xs + n)
-_⤙'_ {n} c xs = Plug (_§_ (⤙-perm xs))
-              ⟫' pid' {sum xs} |' c
-              ⟫' Plug (_§_ (⤙-perm xs *))
+_⤙_ : ∀ {n cs} → ℂ {cs} n n → (xs : Vec ℕ n) → ℂ {cs} (sum xs + n) (sum xs + n)
+_⤙_ {n} c xs = Plug (_§_ (⤙-perm xs))
+              ⟫ id⤨ {sum xs} ∥ c
+              ⟫ Plug (_§_ (⤙-perm xs *))

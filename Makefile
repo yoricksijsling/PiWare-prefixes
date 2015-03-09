@@ -4,10 +4,15 @@ INCLUDES=${AGDA_INCLUDES} \
          ../piware-agda/src \
          ../agda-stdlib/src
 
-AGDA_MODULES=PiWarePrefixes/Gates/Plus \
+AGDA_MODULES=PiWarePrefixes/Atom/Int8 \
+             PiWarePrefixes/Circuit/Context/Core \
+             PiWarePrefixes/Gates/Plus \
              PiWarePrefixes/Patterns/Core \
              PiWarePrefixes/Plugs/Core \
-             PiWarePrefixes/Samples/Fan
+             PiWarePrefixes/Samples/Fan \
+             PiWarePrefixes/Simulation/Equality/Core \
+             PiWarePrefixes/Simulation/Properties/Core \
+             PiWarePrefixes/Utils
 
 
 INCLUDE_PARAMS=$(INCLUDES:%=-i%$)

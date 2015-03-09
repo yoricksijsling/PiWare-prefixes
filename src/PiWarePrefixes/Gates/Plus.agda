@@ -5,10 +5,10 @@ open import Data.Nat.DivMod using (_mod_)
 open import Data.Fin using (Fin; toℕ) renaming (zero to Fz; suc to Fs)
 open import Data.Vec using (Vec; [_]) renaming (_∷_ to _◁_; [] to ε)
 
--- For now, we just Bool atoms. It should work on every semiring.
+open import PiWare.Atom using (module Atomic)
 open import PiWarePrefixes.Atom.Int8 using (Atomic-Int8)
-open import PiWare.Synthesizable Atomic-Int8 using (W)
 open import PiWare.Gates Atomic-Int8 using (Gates)
+open Atomic Atomic-Int8 using (W)
 
 |Plus| = 1
 
