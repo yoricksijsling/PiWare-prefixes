@@ -6,7 +6,7 @@ module PiWarePrefixes.Simulation.Properties.Stretching {At : Atomic} (Gt : Gates
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-comm; +-suc; +-assoc)
-open import Data.Vec using (Vec; _++_; _∷_; [])
+open import Data.Vec using (Vec; _++_; _∷_; []; [_])
                      renaming (sum to sumᵥ)
 open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; subst; trans)
 
@@ -27,8 +27,11 @@ private
 -- Stretching
 
 postulate
-  ⤙-equal : ∀ {n} (f : ℂ n n) {xs ys : Vec ℕ n} →
-             xs ≡ ys → f ⤙ xs ≈⟦⟧ f ⤙ ys
+  ⤙-equal : ∀ {n} (f : ℂ n n) {xs ys : Vec ℕ n} → xs ≡ ys → f ⤙ xs ≈⟦⟧ f ⤙ ys
+
+⤚-equal : ∀ {n} (f : ℂ n n) {xs ys : Vec ℕ n} → xs ≡ ys → xs ⤚ f ≈⟦⟧ ys ⤚ f
+⤚-equal f refl = ≈⟦⟧-refl
+
 
 -- id{#x} ⤙ x ≡ id{Σx}
 postulate
@@ -101,12 +104,10 @@ postulate
         (xs ++ ys) ⤚ (f ∥ g) ≈⟦⟧ (xs ⤚ f) ∥ (ys ⤚ g)
 
 _∷ʳ_ : ∀ {a n} {A : Set a} (xs : Vec A n) (x : A) → Vec A (suc n)
-_∷ʳ_ {n = n} xs x rewrite +-comm 1 n = xs ++ (x ∷ [])
+_∷ʳ_ {n = n} xs x rewrite +-comm 1 n = xs ++ [ x ]
 
 -- flip law
 postulate
-  -- stretch-flip : ∀ {i k n} (f : ℂ (suc n) (suc n)) (ys : Vec ℕ n) →
-  --                id⤨ {i} ∥ (f ⤙ (ys ∷ʳ suc k)) ≈⟦⟧ ((suc i ∷ ys) ⤚ f) ∥ id⤨ {k}
   stretch-flip : ∀ {i k n} (f : ℂ (suc n) (suc n)) (ys : Vec ℕ n) →
                  id⤨ {i} ∥ (f ⤙ (ys ∷ʳ k)) ≈⟦⟧ ((i ∷ ys) ⤚ f) ∥ id⤨ {k}
 
@@ -132,13 +133,11 @@ stretch-derived-1 {n} {j} {k} f xs = begin
   where
   open SimEq.≈⟦⟧-Reasoning
 
+-- Derived stretch law 2
 -- (f × id{#y-1}) ⤙ x ++ y = f ⤙ x ++ [Σy]
-stretch-derived-2 : ∀ {n m} (f : ℂ (suc n) (suc n)) (xs : Vec ℕ n) (ys : Vec ℕ (suc m)) →
-                    (f ∥ id⤨ {m}) ⤙ subst (Vec ℕ) (+-suc n m) (xs ++ ys)
-                      ≈⟦⟧ (f ⤙ (xs ∷ʳ (sumᵥ ys + m)))
-stretch-derived-2 {n} {m} f xs (y ∷ ys) = begin
-  (f ∥ id⤨ {m}) ⤙ subst (Vec ℕ) (+-suc n m) (xs ++ (y ∷ ys))
-    ≈⟦⟧⟨ ⤙-equal _ {!!} ⟩
+stretch-derived-2 : ∀ {n m} (f : ℂ (suc n) (suc n)) (xs : Vec ℕ n) (y : ℕ) (ys : Vec ℕ m) →
+                    (f ∥ id⤨ {m}) ⤙ (xs ∷ʳ y ++ ys) ≈⟦⟧ (f ⤙ (xs ∷ʳ (sumᵥ (y ∷ ys) + m)))
+stretch-derived-2 {n} {m} f xs y ys = begin
   (f ∥ id⤨ {m}) ⤙ (xs ∷ʳ y ++ ys)
     ≈⟦⟧⟨ ⤙-||-distrib' _ _ _ _ ⟩
   f ⤙ (xs ∷ʳ y) ∥ id⤨ {m} ⤙ ys
