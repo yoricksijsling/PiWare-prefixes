@@ -3,20 +3,23 @@ open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Simulation.Properties {At : Atomic} (Gt : Gates At) where
 
+open import Category.Applicative using (RawApplicative; module RawApplicative)
+open import Category.Applicative.Indexed using (Morphism; module Morphism; IFun; RawIApplicative; module RawIApplicative)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-right-identity; +-assoc)
 open import Data.Product using (_,_; proj₁; proj₂)
-open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_)
+open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_) renaming (applicative to vec-applicative)
 open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin)
 open import Function using (id; _$_; _∘_; flip)
-open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_)
+open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; trans)
 
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
-open import PiWarePrefixes.Patterns.Core Gt using (_⤚_; ⤚-perm; _⤙_)
+open import PiWarePrefixes.Patterns.Core Gt using (_⤚_; _⤙_)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
+open import PiWarePrefixes.Plugs.Core Gt using (vec-morphism; plug-M; plug-M-⟦⟧; M-∘)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
   using (_≈⟦⟧_; Mk≈⟦⟧; easy-≈⟦⟧; ≈⟦⟧-trans; _≈e_)
@@ -24,6 +27,7 @@ open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
 
 open Atomic At using (W)
+open Morphism using (op; op-pure; op-⊛; op-<$>)
 
 private
   import Data.Vec.Equality
@@ -38,12 +42,6 @@ private
 id⤨-id : ∀ {i} (w : W i) → ⟦ id⤨ ⟧ w ≡ w
 id⤨-id w rewrite tabulate-allFin (λ fin → lookup fin w) = map-lookup-allFin w
 
-private
-  tabulate-extensionality : ∀ {n} {r : Set} {f g : Fin n → r} →
-    (∀ x → f x ≡ g x) → tabulate f ≡ tabulate g
-  tabulate-extensionality {zero} p = refl
-  tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p ∘ suc)) = refl
-
 plug-∘ : ∀ {i j o} (f : Fin j → Fin i) (g : Fin o → Fin j) → Plug f ⟫ Plug g ≈⟦⟧ Plug (f ∘ g)
 plug-∘ f g = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
   tabulate-extensionality (λ fin → lookup∘tabulate (λ fin₁ → lookup (f fin₁) w) (g fin))
@@ -54,6 +52,29 @@ plug-extensionality p = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
 
 pid-plugs : ∀ {i o} {f : Fin o → Fin i} {g : Fin i → Fin o} → (∀ x → f (g x) ≡ x) → Plug f ⟫ Plug g ≈⟦⟧ id⤨ {i}
 pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (plug-extensionality p)
+
+plug-id-M : ∀ {i} (M : vec-morphism i i) →
+              (∀ {X : Set} (w : Vec X i) → op M w ≡ w)→
+              plug-M M ≈⟦⟧ id⤨ {i}
+plug-id-M M p = easy-≈⟦⟧ $ λ w → VE.from-≡ (trans (trans (plug-M-⟦⟧ M w) (p w)) (sym (id⤨-id w)))
+
+plug-M-∘ : ∀ {i j o} (M₁ : vec-morphism i j) (M₂ : vec-morphism j o) →
+                     plug-M M₁ ⟫ plug-M M₂ ≈⟦⟧ plug-M (M-∘ M₂ M₁)
+plug-M-∘ {i} M₁ M₂ = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
+  where
+  helper : (w : W i) → ⟦ plug-M M₁ ⟫ plug-M M₂ ⟧ w ≡
+                       ⟦ plug-M (M-∘ M₂ M₁) ⟧ w
+  helper w rewrite plug-M-⟦⟧ (M-∘ M₂ M₁) w
+                 | plug-M-⟦⟧ M₁ w
+                 | plug-M-⟦⟧ M₂ (op M₁ w) = refl
+
+plug-M-extensionality : ∀ {i o} {M₁ : vec-morphism i o} {M₂ : vec-morphism i o} →
+                        (∀ {X : Set} (w : Vec X i) → op M₁ w ≡ op M₂ w) → plug-M M₁ ≈⟦⟧ plug-M M₂
+plug-M-extensionality p = plug-extensionality (λ x → cong (lookup x) (p _))
+
+pid-plugs-M : ∀ {i o} (M₁ : vec-morphism i o) (M₂ : vec-morphism o i) →
+              (∀ {X : Set} (w : Vec X i) → op M₂ (op M₁ w) ≡ w) → plug-M M₁ ⟫ plug-M M₂ ≈⟦⟧ id⤨ {i}
+pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-M-∘ M₁ M₂) (plug-id-M (M-∘ M₂ M₁) p)
 
 
 ----------------------------------------------------
@@ -104,10 +125,6 @@ pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (plug-extensionality p)
   dropEq [] xs₂ [] ys₂ xs≈ys = xs≈ys
   dropEq (x ∷ xs₁) xs₂ (x₁ ∷ ys₁) ys₂ (x¹≈x² VE.∷-cong xs≈ys) = dropEq xs₁ xs₂ ys₁ ys₂ xs≈ys
 
-  ++-assoc : ∀ {n m o} (xs : W n) (ys : W m) (zs : W o) → (xs ++ ys) ++ zs VE.≈ xs ++ ys ++ zs
-  ++-assoc [] ys zs = VE.from-≡ refl
-  ++-assoc (x ∷ xs) ys zs = refl VE.∷-cong ++-assoc xs ys zs
-
   lem₁ : ∀ {n m o} (xs : W (n + m + o)) (ys : W (n + (m + o))) → xs VE.≈ ys →
          proj₁ (splitAt n (proj₁ (splitAt (n + m) xs))) VE.≈ proj₁ (splitAt n ys)
   lem₁ {n} {m} xs ys xs≈ys with splitAt (n + m) xs
@@ -153,6 +170,6 @@ pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (plug-extensionality p)
 ⟫-∥-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ ∘ imp)
   where
   imp : ∀ w → ⟦ f₁ ∥ f₂ ⟫ g₁ ∥ g₂ ⟧ w ≡ ⟦ (f₁ ⟫ g₁) ∥ (f₂ ⟫ g₂) ⟧ w
-  imp w rewrite splitAt-++ m₁ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
+  imp w rewrite splitAt-++ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
 -- seq-par-distrib can be generalized to arbitrary width and height..
 

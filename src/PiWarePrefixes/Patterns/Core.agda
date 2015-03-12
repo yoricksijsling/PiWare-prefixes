@@ -1,50 +1,72 @@
-open import PiWare.Atom using (Atomic)
+open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Patterns.Core {At : Atomic} (Gt : Gates At) where
 
 open import Data.Fin as Fin using (Fin)
-open import Data.Nat using (ℕ; zero; suc; _*_; _+_; _<_; s≤s)
-open import Data.Nat.Properties as NP using (m≤m+n)
-open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; *-comm)
-open import Data.Vec using (Vec; sum; []; _∷_)
-open import Function using (_$_)
+open import Data.Nat using (ℕ; zero; suc; _*_; _+_)
+open import Data.Nat.Properties.Simple using (+-right-identity; *-comm)
+open import Data.Product using (_,_; <_,_>)
+open import Data.Vec hiding (zipWith)
+open import Function using (id; _$_; flip)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
-open import PiWare.Circuit Gt using (ℂ; Plug; _⟫_; _∥_)
+open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
+open import PiWarePrefixes.MinGroups using (ExtractInsert; size)
 open import PiWare.Patterns Gt using (parsN)
-open import PiWarePrefixes.Permutation as P using (Perm; _§_; ε; _◀_; _*)
+import PiWarePrefixes.Patterns.Stretch Gt as Stretch
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core Gt using (zip⤨)
+
+open Atomic At using (W; Atom)
 
 
 zipWith : ∀ {k n cs} → ℂ {cs} k 1 → ℂ {cs} (k * n) (1 * n)
 zipWith {k} {n} f with (zip⤨ {k} {n} ⟫ parsN {n} f)
 zipWith {k} {n} f | z rewrite *-comm n 1 | +-right-identity n = z
 
-⤚-perm : ∀ {n} → (xs : Vec ℕ n) → Perm (sum xs + n)
-⤚-perm {n} xs = toPerm' 0 xs
+⤙-direction : ExtractInsert
+⤙-direction = record
+  { extf = < head , tail >
+  ; insf = _∷_
+  ; extf-insf-id = extf-insf-id
+  ; insf-extf-id = insf-extf-id
+  }
   where
-  toPerm' : ∀ {n} → (i : ℕ) → (xs : Vec ℕ n) → Perm (i + sum xs + n)
-  toPerm' i [] = P.i
-  toPerm' {suc n} i (zero ∷ xs) rewrite +-suc (i + sum xs) n = toPerm' (suc i) xs
-  toPerm' {suc n} i (suc x ∷ xs) rewrite +-suc i (sum (x ∷ xs)) = Fin.fromℕ≤ i< ◀ toPerm' i (x ∷ xs)
-    where
-    i< : i < suc (i + sum (x ∷ xs) + suc n)
-    i< = s≤s $ begin
-      i                         ≤⟨ m≤m+n _ (sum (x ∷ xs)) ⟩
-      i + sum (x ∷ xs)          ≤⟨ m≤m+n _ (suc n) ⟩
-      i + sum (x ∷ xs) + suc n  ∎
-      where open Data.Nat.≤-Reasoning
+  extf-insf-id : ∀ {A n} (x : Vec A (suc n)) → head x ∷ tail x ≡ x
+  extf-insf-id (x ∷ xs) = refl
+  insf-extf-id : ∀ {A n} (x : A) (xs : Vec A n) → head (x ∷ xs) , tail (x ∷ xs) ≡ (x , xs)
+  insf-extf-id x xs = refl
 
-_⤚_ : ∀ {n cs} → (xs : Vec ℕ n) → ℂ {cs} n n → ℂ {cs} (sum xs + n) (sum xs + n)
-_⤚_ {n} xs c = Plug (_§_ (⤚-perm xs))
-              ⟫ id⤨ {sum xs} ∥ c
-              ⟫ Plug (_§_ (⤚-perm xs *))
+_⤙_ : ∀ {n cs} → ℂ {cs} n n → (as : Vec ℕ n) → ℂ {cs} (size 1 as) (size 1 as)
+_⤙_ = Stretch.WithDirection.stretch ⤙-direction
 
-postulate
-  ⤙-perm : ∀ {n} → (xs : Vec ℕ n) → Perm (sum xs + n)
+-- open import Level using (_⊔_)
+-- open import Data.Product using (Σ; ∃!; ∃; _×_)
 
-_⤙_ : ∀ {n cs} → ℂ {cs} n n → (xs : Vec ℕ n) → ℂ {cs} (sum xs + n) (sum xs + n)
-_⤙_ {n} c xs = Plug (_§_ (⤙-perm xs))
-              ⟫ id⤨ {sum xs} ∥ c
-              ⟫ Plug (_§_ (⤙-perm xs *))
+-- ∃₂! : ∀ {a b c ℓ} {A : Set a} {B : A → Set b} →
+--      (_≈_ : A → A → Set ℓ) → ({x x' : A} {p : x ≈ x'} → B x → B x' → Set ℓ) →
+--      (C : (x : A) → B x → Set c) → Set (a ⊔ b ⊔ c ⊔ ℓ)
+-- ∃₂! _≈_ _~_ C = ∃ λ a → ∃ λ b → C a b × (∀ {a' b'} → C a' b' → Σ (a ≈ a') (λ p → _~_ {p = p} b b') )
+
+-- initLast′ : ∀ {a n} {A : Set a} (xs : Vec A (1 + n)) →
+--   ∃₂! _≡_ _≡_ λ ys y → xs ≡ ys ∷ʳ y
+-- initLast′ {n = zero} (x ∷ []) = [] , x , refl , (λ { {[]} refl → refl , refl})
+-- initLast′ {n = suc n} (x ∷ xs) with initLast′ xs
+
+⤚-direction : ExtractInsert
+⤚-direction = record
+  { extf = < last , init >
+  ; insf = flip _∷ʳ_
+  ; extf-insf-id = extf-insf-id
+  ; insf-extf-id = insf-extf-id
+  }
+  where
+  extf-insf-id : ∀ {A n} (x : Vec A (suc n)) → init x ∷ʳ last x ≡ x
+  extf-insf-id xs with initLast xs
+  extf-insf-id .(xs ∷ʳ x) | xs , x , refl = refl
+  postulate
+    insf-extf-id : ∀ {A n} (x : A) (xs : Vec A n) → last (xs ∷ʳ x) , init (xs ∷ʳ x) ≡ x , xs
+
+_⤚_ : ∀ {n cs} → (as : Vec ℕ n) → ℂ {cs} n n → ℂ {cs} (size 1 as) (size 1 as)
+_⤚_ = flip (Stretch.WithDirection.stretch ⤚-direction)
