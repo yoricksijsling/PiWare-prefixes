@@ -3,8 +3,7 @@ open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Patterns.Stretch {At : Atomic} (Gt : Gates At) where
 
-open import Category.Applicative using (RawApplicative; module RawApplicative)
-open import Category.Applicative.Indexed using (Morphism; module Morphism; IFun; RawIApplicative; module RawIApplicative)
+open import Category.Functor using (module RawFunctor)
 open import Data.Fin as Fin using (Fin; toℕ)
 open import Data.Nat using (ℕ; zero; suc; _*_; _+_; _<_; s≤s)
 open import Data.Nat.Properties as NP using (m≤m+n)
@@ -26,7 +25,8 @@ open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Utils
 
 open Atomic At using (W; Atom)
-open Morphism using (op; op-pure; op-⊛; op-<$>)
+open RawFunctor
+open Morphism using (op; op-<$>)
 
 private
   import Data.Vec.Equality
@@ -42,39 +42,29 @@ module WithDirection (extract-insert : ExtractInsert) where
              Vec A (size 1 as) → Vec A (n + size 0 as)
   in-table as = uncurry _++_ ∘ map× id ungroup ∘ extract ∘ group 1 as
 
-  in-M : ∀ {n} (as : Vec ℕ n) → vec-morphism (size 1 as) (n + size 0 as)
-  in-M as = record
-    { op = in-table as
-    ; op-pure = in-pure as
-    ; op-⊛ = in-⊛ as
-    }
+  in-FM : ∀ {n} (as : Vec ℕ n) → Morphism (vec-functor (size 1 as)) (vec-functor (n + size 0 as))
+  in-FM as = record { op = in-table as ; op-<$> = in-<$> as }
     where
     postulate
-      in-pure : ∀ {n} (as : Vec ℕ n) {X : Set} (x : X) → in-table as (replicate x) ≡ replicate x
-      in-⊛ : ∀ {n} (as : Vec ℕ n) {X Y : Set} (fs : Vec (X → Y) (size 1 as)) (xs : Vec (X) (size 1 as)) →
-        in-table as (fs ⊛ xs) ≡ in-table as fs ⊛ in-table as xs
+      in-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (size 1 as)) →
+               in-table as (map f xs) ≡ map f (in-table as xs)
 
   in-⤨ : ∀ {n} (as : Vec ℕ n) → 𝐂 (size 1 as) (n + size 0 as)
-  in-⤨ as = plug-M (in-M as)
+  in-⤨ as = plug-FM (in-FM as)
   
   out-table : ∀ {A : Set} {n} (as : Vec ℕ n) →
                Vec A (n + size 0 as) → Vec A (size 1 as)
   out-table {n = n} as = ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt' n
-  
-  out-M : ∀ {n} (as : Vec ℕ n) → vec-morphism (n + size 0 as) (size 1 as)
-  out-M as = record
-    { op = out-table as
-    ; op-pure = out-pure as
-    ; op-⊛ = out-⊛ as
-    }
+
+  out-FM : ∀ {n} (as : Vec ℕ n) → Morphism (vec-functor (n + size 0 as)) (vec-functor (size 1 as))
+  out-FM as = record { op = out-table as ; op-<$> = out-<$> as }
     where
     postulate
-      out-pure : ∀ {n} (as : Vec ℕ n) {X : Set} (x : X) → out-table as (replicate x) ≡ replicate x
-      out-⊛ : ∀ {n} (as : Vec ℕ n) {X Y : Set} (fs : Vec (X → Y) (n + size 0 as)) (xs : Vec (X) (n + size 0 as)) →
-          out-table as (fs ⊛ xs) ≡ out-table as fs ⊛ out-table as xs
-  
+      out-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (n + size 0 as)) →
+               out-table as (map f xs) ≡ map f (out-table as xs)
+    
   out-⤨ : ∀ {n} (as : Vec ℕ n) → 𝐂 (n + size 0 as) (size 1 as)
-  out-⤨ as = plug-M (out-M as)
+  out-⤨ as = plug-FM (out-FM as)
   
   stretch : ∀ {n cs} → ℂ {cs} n n → (as : Vec ℕ n) → ℂ {cs} (size 1 as) (size 1 as)
   stretch {n} c as = in-⤨ as
@@ -83,8 +73,7 @@ module WithDirection (extract-insert : ExtractInsert) where
 
   out-in-table-identity : ∀ {n} (as : Vec ℕ n) {A} (xs : Vec A (size 1 as)) →
                           out-table as (in-table as xs) ≡ xs
-  out-in-table-identity {n} as xs with splitAt-++ (proj₁ (extract (group 1 as xs)))
-                                                  (ungroup (proj₂ (extract (group 1 as xs))))
+  out-in-table-identity {n} as xs with uncurry splitAt-++ (map× id ungroup (extract (group 1 as xs)))
                                      | ungroup-group-identity as (proj₂ (extract (group 1 as xs)))
   ... | s | p rewrite s | p = begin
     ungroup (uncurry insert (extract (group 1 as xs)))
@@ -95,12 +84,6 @@ module WithDirection (extract-insert : ExtractInsert) where
       ∎
     where
     open Relation.Binary.PropositionalEquality.≡-Reasoning
-
-  IdentityApplicative : ∀ {f} → RawApplicative {f = f} id
-  IdentityApplicative = RawMonad.rawIApplicative IdentityMonad
-    where
-    open import Category.Monad
-    open import Category.Monad.Identity
 
   conv : ∀ {n} (f : ℂ n n) (as : Vec ℕ n) (w : W (size 1 as)) → ⟦ stretch f as ⟧ w ≡ (ungroup ∘ (extract-map ⟦ f ⟧) ∘ (group 1 as)) w
   conv {n} f as w = begin
@@ -119,8 +102,8 @@ module WithDirection (extract-insert : ExtractInsert) where
     where
     open Relation.Binary.PropositionalEquality.≡-Reasoning
     expand-plugs : (⟦ out-⤨ as ⟧ ∘ ⟦ f ∥ id⤨ ⟧ ∘ ⟦ in-⤨ as ⟧) w ≡ (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
-    expand-plugs with plug-M-⟦⟧ (out-M as) (⟦ f ∥ id⤨ ⟧ (⟦ in-⤨ as ⟧ w))
-                    | plug-M-⟦⟧ (in-M as) w
+    expand-plugs with plug-FM-⟦⟧ (out-FM as) (⟦ f ∥ id⤨ ⟧ (⟦ in-⤨ as ⟧ w))
+                    | plug-FM-⟦⟧ (in-FM as) w
     ... | r1 | r2 rewrite r1 | r2  = refl
     expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _) w
     expand-par w rewrite tabulate∘lookup (proj₂ (splitAt' n w)) = refl
@@ -128,46 +111,16 @@ module WithDirection (extract-insert : ExtractInsert) where
     map×-from-to (w' , gs) rewrite ungroup-group-identity as gs = refl
     splitAt'-++ : ∀ {A : Set} {m n} {x y : Vec A m × Vec A n} (p : x ≡ y) → splitAt' m (uncurry′ _++_ x) ≡ y
     splitAt'-++ {x = xs , ys} p rewrite splitAt-++ xs ys = p
-  
-
-
-
-  -- out-in-identity-M : ∀ {n} (as : Vec ℕ n) → M-∘ 
-
-  -- out-in-identity : ∀ {n} (as : Vec ℕ n) i → in-⤪ as (out-⤪ as i) ≡ i
-  -- out-in-identity {n} as i = begin
-  --   in-⤪ as (lookup i (out-table as _))
-  --     ≡⟨ ? ⟩
-  --   lookup i _
-  --     ≡⟨ lookup-allFin i ⟩
-  --   i
-  --     ∎
-  --   where
-  --   open Relation.Binary.PropositionalEquality.≡-Reasoning
-    --   ≡⟨ sym (op-<$> (lookup-out-morphism as i) (in-⤪ as) _) ⟩
-    -- lookup i (out-table as (map (in-⤪ as) _))
-    --   ≡⟨⟩
-    -- lookup i (out-table as (map (flip lookup (in-table as _)) _))
-    --   ≡⟨ cong (lookup i ∘ out-table as) (map-lookup-allFin (in-table as _)) ⟩
-    -- lookup i (out-table as (in-table as _))
-    --   ≡⟨ cong (lookup i) (out-in-table-identity as _) ⟩
-    -- lookup i _
-    --   ≡⟨ lookup-allFin i ⟩
-    -- i
-    --   ∎
-    -- where
-    -- open Relation.Binary.PropositionalEquality.≡-Reasoning
-
-
-
-
-
-
-
 
 
 --   --------------------------------------------------------------------------------
 --   -- Lots of applicatives
+
+  -- IdentityApplicative : ∀ {f} → RawApplicative {f = f} id
+  -- IdentityApplicative = RawMonad.rawIApplicative IdentityMonad
+  --   where
+  --   open import Category.Monad
+  --   open import Category.Monad.Identity
   
 --   ×-applicative : ∀ {i f} {I : Set i} {F₁ F₂ : IFun I f}
 --                   (A₁ : RawIApplicative F₁) (A₂ : RawIApplicative F₂) →
@@ -347,22 +300,6 @@ module WithDirection (extract-insert : ExtractInsert) where
 --   lookup-out-morphism : ∀ {n} (as : Vec ℕ n) i → Morphism (vec-applicative {_} {n + size 0 as})
 --                                                           (IdentityApplicative)
 --   lookup-out-morphism as i = morphism-∘ (lookup-morphism i) (out-morphism as)
-
-
---   out-in-table-identity : ∀ {n} (as : Vec ℕ n) {A} (xs : Vec A (size 1 as)) →
---                           out-table as (in-table as xs) ≡ xs
---   out-in-table-identity {n} as xs with splitAt-++ (proj₁ (extract (group 1 as xs)))
---                                                   (to-vec (proj₂ (extract (group 1 as xs))))
---                                      | to-from-identity as (proj₂ (extract (group 1 as xs)))
---   ... | s | p rewrite s | p = begin
---     to-vec (uncurry insert (extract (group 1 as xs)))
---       ≡⟨ cong to-vec (extract-insert-identity (group 1 as xs)) ⟩
---     to-vec (group 1 as xs)
---       ≡⟨ from-to-identity as xs ⟩
---     xs
---       ∎
---     where
---     open Relation.Binary.PropositionalEquality.≡-Reasoning
   
 --   out-in-identity : ∀ {n} (as : Vec ℕ n) i → in-⤪ as (out-⤪ as i) ≡ i
 --   out-in-identity {n} as i = begin
@@ -380,34 +317,4 @@ module WithDirection (extract-insert : ExtractInsert) where
 --       ∎
 --     where
 --     open Relation.Binary.PropositionalEquality.≡-Reasoning
-
---   conv : ∀ {n} (f : 𝐂 n n) (as : Vec ℕ n) (w : W (size 1 as)) → ⟦ stretch f as ⟧ w ≡ (to-vec ∘ (extract-map ⟦ f ⟧) ∘ (group 1 as)) w
---   conv {n} f as w = begin
---     -- (⟦ out-⤨ as ⟧ ∘ ⟦ f ∥ id⤨ ⟧ ∘ ⟦ in-⤨ as ⟧) w
---     --   ≡⟨ cong ⟦ out-⤨ as ⟧ (expand-par (⟦ in-⤨ as ⟧ w)) ⟩
---     -- (⟦ out-⤨ as ⟧ ∘ uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘ ⟦ in-⤨ as ⟧) w
---     --   ≡⟨⟩
---     -- (⟦ Plug (flip lookup (out-table as (allFin _))) ⟧ ∘ uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘ ⟦ in-⤨ as ⟧) w
---     --   ≡⟨ {!!} ⟩
---     -- ( (λ ins → tabulate (λ fin → lookup (lookup fin (out-table as (allFin _))) ins)) ∘ uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘ ⟦ in-⤨ as ⟧) w
---     --   ≡⟨ {!!} ⟩
---     -- (to-vec ∘ uncurry insert ∘ map× ⟦ f ⟧ id ∘ extract ∘ group 1 as) w
-
---   -- out-in-identity : ∀ {n} (as : Vec ℕ n) i → in-⤪ as (out-⤪ as i) ≡ i
---   --   in-⤪ as (lookup i (out-table as _))
-
---     (⟦ out-⤨ as ⟧ $ ⟦ f ∥ id⤨ ⟧ $ ⟦ in-⤨ as ⟧ w)
---       ≡⟨⟩
---     (⟦ out-⤨ as ⟧ $ ⟦ f ∥ id⤨ ⟧ $ ⟦ in-⤨ as ⟧ w)
---       ≡⟨ {!!} ⟩
---     (to-vec ∘ extract-map ⟦ f ⟧ ∘ group 1 as) w
---       ∎
---     where
---     open Relation.Binary.PropositionalEquality.≡-Reasoning
---     expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _) w
---     expand-par w rewrite tabulate∘lookup (proj₂ (splitAt' n w)) = refl
---     -- expand-plugs : (⟦ out-⤨ as ⟧ ∘ ⟦ f ∥ id⤨ ⟧ ∘ ⟦ in-⤨ as ⟧) w ≡ ()
-
--- -- stretch : ∀ {n cs} → ℂ {cs} n n → (as : Vec ℕ n) → ℂ {cs} (size 1 as) (size 1 as)
-
 

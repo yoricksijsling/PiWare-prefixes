@@ -3,8 +3,6 @@ open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Plugs.Core {At : Atomic} (Gt : Gates At) where
 
-open import Category.Applicative using (RawApplicative; module RawApplicative)
-open import Category.Applicative.Indexed using (Morphism; module Morphism; IFun; RawIApplicative; module RawIApplicative)
 open import Data.Fin using (Fin; toℕ)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _≟_)
 open import Data.Nat.DivMod using (DivMod; _divMod_; _mod_)
@@ -23,7 +21,7 @@ open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Utils
 
 open Atomic At using (W)
-open Morphism using (op; op-pure; op-⊛; op-<$>)
+open Morphism using (op;  op-<$>)
 
 ≢0-*-≢0 : ∀ n m → False (n ≟ 0) → False (m ≟ 0) → False (n * m ≟ 0)
 ≢0-*-≢0 zero m () _
@@ -49,36 +47,15 @@ zip⤨ {k} {n} = p k n
       dm = (toℕ o divMod k) {k≢0}
       val = n * toℕ (DivMod.remainder dm) + DivMod.quotient dm
 
-vec-morphism : ∀ {a} → ℕ → ℕ → Set _
-vec-morphism {a} i o = Morphism (vec-applicative {a} {i}) (vec-applicative {a} {o})
+plug-FM : ∀ {i o} → Morphism (vec-functor i) (vec-functor o) → 𝐂 i o
+plug-FM M = Plug (flip lookup (op M (allFin _)))
 
-plug-M : ∀ {i o} → vec-morphism i o → 𝐂 i o
-plug-M M = Plug (flip lookup (op M (allFin _)))
-
-M-∘ : ∀ {i f} {I : Set i} {F₁ F₂ F₃ : IFun I f}
-             {A₁ : RawIApplicative F₁} {A₂ : RawIApplicative F₂} {A₃ : RawIApplicative F₃} →
-             Morphism A₂ A₃ → Morphism A₁ A₂ → Morphism A₁ A₃
-M-∘ {i} {f} {I} {F₁} {A₁ = A₁} {A₃ = A₃} M₁ M₂ = record
-  { op = op M₁ ∘ op M₂
-  ; op-pure = ∘-pure
-  ; op-⊛ = ∘-⊛
-  }
-  where
-  open RawIApplicative A₁ renaming (pure to pure₁; _⊛_ to _⊛₁_)
-  open RawIApplicative A₃ renaming (pure to pure₃; _⊛_ to _⊛₃_)
-  ∘-pure : ∀ {i : I} {X : Set f} (x : X) → op M₁ {i = i} (op M₂ (pure₁ x)) ≡ pure₃ x
-  ∘-pure {i} x rewrite op-pure M₂ {i = i} x = op-pure M₁ x
-  ∘-⊛ : ∀ {i j k : I} {X Y : Set f} (fs : F₁ i j (X → Y)) (xs : F₁ j k X) →
-        op M₁ (op M₂ (fs ⊛₁ xs)) ≡ (op M₁ (op M₂ fs) ⊛₃ op M₁ (op M₂ xs))
-  ∘-⊛ fs xs rewrite op-⊛ M₂ fs xs = op-⊛ M₁ (op M₂ fs) (op M₂ xs)
-
--- We only use the 'normal' functor morphism, not the applicative stuff.
-plug-M-⟦⟧ : ∀ {i o} (M : Morphism (vec-applicative {_} {i}) (vec-applicative {_} {o})) →
-                      (w : W i) → ⟦ plug-M M ⟧ w ≡ op M w
-plug-M-⟦⟧ {i} {o} M w = begin
+plug-FM-⟦⟧ : ∀ {i o} (M : Morphism (vec-functor i) (vec-functor o)) (w : W i) → ⟦ plug-FM M ⟧ w ≡ op M w
+-- plug-FM-⟦⟧ = {!!}
+plug-FM-⟦⟧ {i} {o} M w = begin
   tabulate (λ fin → flip lookup w (lookup fin (op M (allFin _))))
     -- ≡⟨ tabulate-extensionality (λ fin → sym (op-<$> (M-∘ (lookup-morphism fin) M) (flip lookup w) _)) ⟩
-    ≡⟨ tabulate-extensionality (λ fin → sym (op-<$> (lookup-morphism fin) (flip lookup w) _)) ⟩
+    ≡⟨ tabulate-extensionality (λ fin → sym (op-<$> (AM-to-FM (lookup-morphism fin)) (flip lookup w) _)) ⟩
   tabulate (λ fin → lookup fin (map (flip lookup w) (op M (allFin _))))
     ≡⟨ tabulate-extensionality (λ fin → sym (cong (lookup fin) (op-<$> M (flip lookup w) _))) ⟩
   tabulate (λ fin → lookup fin (op M (map (flip lookup w) (allFin _))))

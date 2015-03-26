@@ -3,8 +3,6 @@ open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Simulation.Properties {At : Atomic} (Gt : Gates At) where
 
-open import Category.Applicative using (RawApplicative; module RawApplicative)
-open import Category.Applicative.Indexed using (Morphism; module Morphism; IFun; RawIApplicative; module RawIApplicative)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-right-identity; +-assoc)
@@ -19,7 +17,7 @@ open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Patterns.Core Gt using (_⤚_; _⤙_)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core Gt using (vec-morphism; plug-M; plug-M-⟦⟧; M-∘)
+open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
   using (_≈⟦⟧_; Mk≈⟦⟧; easy-≈⟦⟧; ≈⟦⟧-trans; _≈e_)
@@ -27,7 +25,7 @@ open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
 
 open Atomic At using (W)
-open Morphism using (op; op-pure; op-⊛; op-<$>)
+open Morphism using (op; op-<$>)
 
 private
   import Data.Vec.Equality
@@ -53,28 +51,28 @@ plug-extensionality p = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
 pid-plugs : ∀ {i o} {f : Fin o → Fin i} {g : Fin i → Fin o} → (∀ x → f (g x) ≡ x) → Plug f ⟫ Plug g ≈⟦⟧ id⤨ {i}
 pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (plug-extensionality p)
 
-plug-id-M : ∀ {i} (M : vec-morphism i i) →
+plug-id-M : ∀ {i} (M : Morphism (vec-functor i) (vec-functor i)) →
               (∀ {X : Set} (w : Vec X i) → op M w ≡ w)→
-              plug-M M ≈⟦⟧ id⤨ {i}
-plug-id-M M p = easy-≈⟦⟧ $ λ w → VE.from-≡ (trans (trans (plug-M-⟦⟧ M w) (p w)) (sym (id⤨-id w)))
+              plug-FM M ≈⟦⟧ id⤨ {i}
+plug-id-M M p = easy-≈⟦⟧ $ λ w → VE.from-≡ (trans (trans (plug-FM-⟦⟧ M w) (p w)) (sym (id⤨-id w)))
 
-plug-M-∘ : ∀ {i j o} (M₁ : vec-morphism i j) (M₂ : vec-morphism j o) →
-                     plug-M M₁ ⟫ plug-M M₂ ≈⟦⟧ plug-M (M-∘ M₂ M₁)
-plug-M-∘ {i} M₁ M₂ = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
+plug-FM-∘ : ∀ {i j o} (M₁ : Morphism (vec-functor i) (vec-functor j)) (M₂ : Morphism (vec-functor j) (vec-functor o)) →
+                     plug-FM M₁ ⟫ plug-FM M₂ ≈⟦⟧ plug-FM (FM-∘ M₂ M₁)
+plug-FM-∘ {i} M₁ M₂ = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
   where
-  helper : (w : W i) → ⟦ plug-M M₁ ⟫ plug-M M₂ ⟧ w ≡
-                       ⟦ plug-M (M-∘ M₂ M₁) ⟧ w
-  helper w rewrite plug-M-⟦⟧ (M-∘ M₂ M₁) w
-                 | plug-M-⟦⟧ M₁ w
-                 | plug-M-⟦⟧ M₂ (op M₁ w) = refl
+  helper : (w : W i) → ⟦ plug-FM M₁ ⟫ plug-FM M₂ ⟧ w ≡
+                       ⟦ plug-FM (FM-∘ M₂ M₁) ⟧ w
+  helper w rewrite plug-FM-⟦⟧ (FM-∘ M₂ M₁) w
+                 | plug-FM-⟦⟧ M₁ w
+                 | plug-FM-⟦⟧ M₂ (op M₁ w) = refl
 
-plug-M-extensionality : ∀ {i o} {M₁ : vec-morphism i o} {M₂ : vec-morphism i o} →
-                        (∀ {X : Set} (w : Vec X i) → op M₁ w ≡ op M₂ w) → plug-M M₁ ≈⟦⟧ plug-M M₂
-plug-M-extensionality p = plug-extensionality (λ x → cong (lookup x) (p _))
+plug-FM-extensionality : ∀ {i o} {M₁ : Morphism (vec-functor i) (vec-functor o)} {M₂ : Morphism (vec-functor i) (vec-functor o)} →
+                        (∀ {X : Set} (w : Vec X i) → op M₁ w ≡ op M₂ w) → plug-FM M₁ ≈⟦⟧ plug-FM M₂
+plug-FM-extensionality p = plug-extensionality (λ x → cong (lookup x) (p _))
 
-pid-plugs-M : ∀ {i o} (M₁ : vec-morphism i o) (M₂ : vec-morphism o i) →
-              (∀ {X : Set} (w : Vec X i) → op M₂ (op M₁ w) ≡ w) → plug-M M₁ ⟫ plug-M M₂ ≈⟦⟧ id⤨ {i}
-pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-M-∘ M₁ M₂) (plug-id-M (M-∘ M₂ M₁) p)
+pid-plugs-M : ∀ {i o} (M₁ : Morphism (vec-functor i) (vec-functor o)) (M₂ : Morphism (vec-functor o) (vec-functor i)) →
+              (∀ {X : Set} (w : Vec X i) → op M₂ (op M₁ w) ≡ w) → plug-FM M₁ ⟫ plug-FM M₂ ≈⟦⟧ id⤨ {i}
+pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-FM-∘ M₁ M₂) (plug-id-M (FM-∘ M₂ M₁) p)
 
 
 ----------------------------------------------------

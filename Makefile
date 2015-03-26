@@ -7,13 +7,16 @@ INCLUDES=${AGDA_INCLUDES} \
 AGDA_MODULES=PiWarePrefixes/Atom/Int8 \
              PiWarePrefixes/Circuit/Context/Core \
              PiWarePrefixes/Gates/Plus \
+             PiWarePrefixes/MinGroups \
              PiWarePrefixes/Patterns/Core \
+             PiWarePrefixes/Patterns/Stretch \
+             PiWarePrefixes/Permutation \
              PiWarePrefixes/Plugs/Core \
              PiWarePrefixes/Samples/Fan \
              PiWarePrefixes/Simulation/Equality/Core \
-             PiWarePrefixes/Simulation/Properties/Core \
+             PiWarePrefixes/Simulation/Properties/Stretching \
+             PiWarePrefixes/Simulation/Properties \
              PiWarePrefixes/Utils
-
 
 INCLUDE_PARAMS=$(INCLUDES:%=-i%$)
 

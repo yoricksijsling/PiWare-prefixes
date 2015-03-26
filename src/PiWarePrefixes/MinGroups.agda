@@ -1,6 +1,5 @@
 module PiWarePrefixes.MinGroups where
 
-open import Category.Applicative using (RawApplicative; module RawApplicative)
 open import Data.Fin as Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc; _*_; _+_; _<_; s≤s)
 open import Data.Nat.Properties as NP using (m≤m+n)
@@ -17,6 +16,7 @@ open import Function using (flip; _∘_)
 open import Relation.Binary.PropositionalEquality
 open import PiWarePrefixes.Utils
 
+open Morphism using (op)
 
 private
   import Data.Vec.Equality
@@ -64,77 +64,32 @@ splitᵍ : ∀ {A i m n} (as : Vec ℕ m) {bs : Vec ℕ n}
 splitᵍ [] gs = [] , gs
 splitᵍ (a ∷ as) (g ∷ gs) = map× (_∷_ g) id (splitᵍ as gs)
 
-open import Relation.Binary using (Setoid; module Setoid)
-
--- module Equality (S : Setoid {!!} {!!}) where
---   private
---     open module SS = Setoid S
---       using () renaming (_≈_ to _≊_; Carrier to A)
-
---   infix 4 _≈_
---   data _≈_ {i¹ i² : ℕ} : ∀ {n¹} {as¹ : Vec ℕ n¹} (gs¹ : MinGroups A i¹ as¹) →
---                          ∀ {n²} {as² : Vec ℕ n²} (gs² : MinGroups A i² as²) → Set where
---     []-cong : [] ≈ []
---     _∷-cong_ : ∀ {a¹ n¹} {as¹ : Vec ℕ n¹} {g¹ : Vec A (i¹ + a¹)} {gs¹ : MinGroups A i¹ as¹} →
---                ∀ {a² n²} {as² : Vec ℕ n²} {g² : Vec A (i² + a²)} {gs² : MinGroups A i² as²} →
---                (g≈g : g¹ VE.≈ g²) → (gs≈gs : gs¹ ≈ gs²) →
---                g¹ ∷ gs¹ ≈ g² ∷ gs²
-
--- postulate
--- split-group-commute i [] p with VE.to-≡ p
--- split-group-commute i [] p | refl = refl
--- split-group-commute i (a ∷ as) {xs = xs} {ys} p with splitAt (i + a) xs
--- split-group-commute i (a ∷ as) {xs = .(x' ++ xs')} {ys} p | x' , xs' , refl = {!!}
-
 ++-ungroup-commute : ∀ {A i m n} {as : Vec ℕ m} {bs : Vec ℕ n} →
   (gs : MinGroups A i as) (hs : MinGroups A i bs) →
   ungroup (gs ++ᵍ hs) VE.≈ ungroup gs ++ ungroup hs
 ++-ungroup-commute [] hs = VE.refl (ungroup hs)
 ++-ungroup-commute (g ∷ gs) hs = VE.trans ((VE.refl g) VE.++-cong (++-ungroup-commute gs hs)) (VE.sym (++-assoc g (ungroup gs) (ungroup hs)))
 
--- sg : ∀ {A} i {m n} (as : Vec ℕ m) {bs : Vec ℕ n} →
---   (f : MinGroups A i as × MinGroups A i bs → MinGroups A i as × MinGroups A i bs) →
---   {xs : Vec A (size i (as ++ bs))} {ys : Vec A (size i as + size i bs)} →
---   (xs VE.≈ ys) →
---   (ungroup ∘ uncurry _++ᵍ_ ∘ f ∘ splitᵍ as ∘ group i (as ++ bs)) xs
---     VE.≈ (uncurry _++_ ∘ map× ungroup ungroup ∘ f ∘ map× (group i as) (group i bs) ∘ splitAt' (size i as)) ys
--- sg i as {bs} f {xs} {ys} p rewrite split-group-commute i as p = uncurry ++-ungroup-commute (f _)
-
-----------------------------------------
-
-minGroups-applicative : ∀ (i : ℕ) {n} (as : Vec ℕ n) → RawApplicative (λ A → MinGroups A i as)
-minGroups-applicative i as = record
-  { pure = minGroups-pure i as
-  ; _⊛_ = minGroups-⊛ i as
-  }
-  where
-  minGroups-pure : ∀ (i : ℕ) {n} (as : Vec ℕ n) → {A : Set} → A → MinGroups A i as
-  minGroups-pure i [] x = []
-  minGroups-pure i (a ∷ as) x = (replicate x) ∷ (minGroups-pure i as x)
-  minGroups-⊛ : ∀ (i : ℕ) {n} (as : Vec ℕ n) → {A B : Set} →
-                MinGroups (A → B) i as → MinGroups A i as → MinGroups B i as
-  minGroups-⊛ i [] [] [] = []
-  minGroups-⊛ i (a ∷ as) (f ∷ fs) (x ∷ xs) = (f ⊛ x) ∷ (minGroups-⊛ i as fs xs)
-
 ----------------------------------------
 
 record ExtractInsert : Set₁ where
   field
-    extf : ∀ {A n} → Vec A (suc n) → A × Vec A n
-    insf : ∀ {A n} → A → Vec A n → Vec A (suc n)
-    extf-insf-id : ∀ {A : Set} {n} (xs : Vec A (suc n)) → uncurry insf (extf xs) ≡ xs
-    insf-extf-id : ∀ {A : Set} {n} (x : A) (xs : Vec A n) → extf (insf x xs) ≡ x , xs
+    extf : ∀ {n} → Morphism (vec-functor (suc n)) (×-functor identity-functor (vec-functor n))
+    insf : ∀ {n} → Morphism (×-functor identity-functor (vec-functor n)) (vec-functor (suc n))
+    extf-insf-id : ∀ {A : Set} {n} (xs : Vec A (suc n)) → op insf (op extf xs) ≡ xs
+    insf-extf-id : ∀ {A : Set} {n} (x : A × Vec A n) → op extf (op insf x) ≡ x
+
 
 module WithExtractInsert (extract-insert : ExtractInsert) where
   open ExtractInsert extract-insert public
 
   extract : ∀ {A i n} {as : Vec ℕ n} → MinGroups A (suc i) as → Vec A n × MinGroups A i as
   extract [] = [] , []
-  extract (g ∷ gs) = zip× _∷_ _∷_ (extf g) (extract gs)
+  extract (g ∷ gs) = zip× _∷_ _∷_ (op extf g) (extract gs)
   
   insert : ∀ {A i n} {as : Vec ℕ n} → Vec A n → MinGroups A i as → MinGroups A (suc i) as
   insert [] [] = []
-  insert (r ∷ rs) (g ∷ gs) = (insf r g) ∷ (insert rs gs)
+  insert (r ∷ rs) (g ∷ gs) = (op insf (r , g)) ∷ (insert rs gs)
   
   extract-insert-identity : ∀ {A i n} {as : Vec ℕ n} →
      (gs : MinGroups A (suc i) as) → uncurry insert (extract gs) ≡ gs
@@ -144,7 +99,7 @@ module WithExtractInsert (extract-insert : ExtractInsert) where
   insert-extract-identity : ∀ {A i n} {as : Vec ℕ n} →
     (xs : Vec A n) (gs : MinGroups A i as) → extract (insert xs gs) ≡ xs , gs
   insert-extract-identity [] [] = refl
-  insert-extract-identity (x ∷ xs) (g ∷ gs) rewrite insf-extf-id x g
+  insert-extract-identity (x ∷ xs) (g ∷ gs) rewrite insf-extf-id (x , g)
                                                   | insert-extract-identity xs gs = refl
 
   extract-map : ∀ {A i n} {as : Vec ℕ n} → (Vec A n → Vec A n) → MinGroups A (suc i) as → MinGroups A (suc i) as
@@ -169,34 +124,9 @@ module WithExtractInsert (extract-insert : ExtractInsert) where
   extract-map-∘ f h gs rewrite uncurry insert-extract-identity (map× h id (extract gs)) = refl
 
   postulate
-    extract-map-split : ∀ {A i m n}
-      (as : Vec ℕ m) {bs : Vec ℕ n} →
+    -- This is why insf and extf have to be functor morphisms
+    extract-map-++-commute : ∀ {A i m n} (as : Vec ℕ m) {bs : Vec ℕ n} →
       (f₁ : Vec A m → Vec A m) (f₂ : Vec A n → Vec A n)→
       (gs : MinGroups A (suc i) (as ++ bs)) →
       extract-map (uncurry _++_ ∘ map× f₁ f₂ ∘ splitAt' m) gs ≡
         (uncurry _++ᵍ_ ∘ map× (extract-map f₁) (extract-map f₂) ∘ splitᵍ as) gs
-
-  -- extract-map-split f₁ f₂ gs = {!!}
-  -- extract-map-++ {as = []} f₁ f₂ gs with f₁ []
-  -- extract-map-++ {as = []} f₁ f₂ gs | [] = refl
-  -- extract-map-++ {as = a ∷ as} f₁ f₂ (g ∷ gs) with extract-map-++ f₁ f₂ gs
-  -- ... | rec = {!!}
-
-  -- extract-map-split : ∀ {A i m n}
-  --   (as : Vec ℕ m) (bs : Vec ℕ n) →
-  --   (f : Vec A m → Vec A m) (g : Vec A n → Vec A n) →
-  --   ∀ w₁ w₂ (w≈w : w₁ VE.≈ w₂) →
-  --   (ungroup ∘′ extract-map (uncurry _++_ ∘′ map× f g ∘′ splitAt' m) ∘′ group (suc i) (as ++ bs)) w₁
-  --   VE.≈ (uncurry _++_ ∘′
-  --        map× (ungroup ∘′ extract-map f ∘′ group (suc i) as)
-  --             (ungroup ∘′ extract-map g ∘′ group (suc i) bs) ∘′ splitAt' (size (suc i) as)) w₂
-  -- extract-map-split as bs f g w₁ w₂ w≈w = {!!}
-
-  -- Can't case split on as, because f and g only work on the whole vec.
-
-  -- extract-map-split [] bs f g w₁ w₂ w≈w with f [] | VE.to-≡ w≈w
-  -- extract-map-split [] bs f g w₁ .w₁ w≈w | [] | refl = VE.refl _
-
-  -- extract-map-split (a ∷ as) bs f g ._ ._ (x¹≈x² Data.Vec.Equality.Equality.∷-cong w≈w)
-  --   with extract-map-split as bs f g _ _ w≈w
-  -- ... | cc = {!!}

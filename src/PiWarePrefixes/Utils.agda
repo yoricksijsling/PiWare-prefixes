@@ -1,11 +1,12 @@
 module PiWarePrefixes.Utils where
 
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Nat using (zero; suc)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_,_; proj₁; proj₂; _×_) renaming (map to map×)
-open import Data.Vec using (Vec; _++_; []; _∷_; splitAt; tabulate)
-open import Function using (_∘_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
+open import Data.Vec using (Vec; _++_; []; _∷_; splitAt; tabulate; _∷ʳ_)
+open import Data.Vec.Properties using (∷-injective)
+open import Function using (id; _∘_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 private 
   import Data.Vec.Equality
@@ -48,3 +49,62 @@ tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p �
            (xs ++ ys) ++ zs VE.≈ xs ++ ys ++ zs
 ++-assoc [] ys zs = VE.refl (ys ++ zs)
 ++-assoc (x ∷ xs) ys zs = refl ∷-cong ++-assoc xs ys zs
+
+∷ʳ-injective : ∀ {a n} {A : Set a} {x y : A} (xs ys : Vec A n) →
+               (xs ∷ʳ x) ≡ (ys ∷ʳ y) → xs ≡ ys × x ≡ y
+∷ʳ-injective [] [] refl = refl , refl
+∷ʳ-injective {x = x'} {y'} (x ∷ xs) (y ∷ ys) p with ∷-injective p
+∷ʳ-injective {x = x'} {y'} (x ∷ xs) (y ∷ ys) p | x=y , p' = map× (cong₂ _∷_ x=y) id (∷ʳ-injective xs ys p')
+
+
+
+--------------------------------------------------------------------------------
+-- Functor morphisms
+
+open import Category.Functor
+import Category.Applicative.Indexed as AI
+import Level
+open import Data.Product renaming (map to map×)
+open import Data.Vec renaming (applicative to vec-applicative)
+open import Data.Unit using (⊤)
+open import Function using (id; _$_)
+
+record Morphism {ℓ} {F₁ F₂ : Set ℓ → Set ℓ}
+                (A : RawFunctor F₁) (B : RawFunctor F₂) : Set (Level.suc ℓ) where
+  module A = RawFunctor A
+  module B = RawFunctor B
+  field
+    op : ∀ {X} → F₁ X → F₂ X
+    op-<$> : ∀ {X Y} (f : X → Y) (x : F₁ X) →
+             op (f A.<$> x) ≡ f B.<$> op x
+
+open RawFunctor
+open Morphism
+open AI.RawIApplicative using (rawFunctor)
+
+FM-∘ : ∀ {ℓ} {F₁ F₂ F₃ : Set ℓ → Set ℓ}
+       {A : RawFunctor F₁} {B : RawFunctor F₂} {C : RawFunctor F₃} →
+       Morphism B C → Morphism A B → Morphism A C
+FM-∘ {A = A} {B} {C} M₁ M₂ = record { op = op M₁ ∘ op M₂ ; op-<$> = ∘-<$> }
+  where
+  ∘-<$> : ∀ {X Y} (f : X → Y) x →
+          (op M₁ (op M₂ (_<$>_ A f x))) ≡ _<$>_ C f (op M₁ (op M₂ x))
+  ∘-<$> f x rewrite op-<$> M₂ f x = op-<$> M₁ f (op M₂ x)
+
+AM-to-FM : ∀ {f} {F₁ F₂ : AI.IFun ⊤ f}
+         {A : AI.RawIApplicative F₁} {B : AI.RawIApplicative F₂} →
+         AI.Morphism A B → Morphism (rawFunctor A) (rawFunctor B)
+AM-to-FM M = record { op = AI.Morphism.op M ; op-<$> = AI.Morphism.op-<$> M }
+
+identity-functor : ∀ {ℓ} → RawFunctor (id)
+identity-functor {ℓ} = record { _<$>_ = _$_ {a = ℓ} }
+
+×-functor : ∀ {ℓ} {F₁ F₂ : Set ℓ → Set ℓ} →
+            (A : RawFunctor F₁) (B : RawFunctor F₂) → RawFunctor (λ x → F₁ x × F₂ x)
+×-functor A B = record { _<$>_ = λ f → map× (_<$>_ A f) (_<$>_ B f) }
+
+vec-functor : ∀ {ℓ} n → RawFunctor (λ (x : Set ℓ) → Vec x n)
+vec-functor {ℓ} n = rawFunctor (vec-applicative {ℓ} {n})
+
+-- vec-morphism : ∀ {a} → ℕ → ℕ → Set _
+-- vec-morphism {a} i o = Morphism (vec-functor {a} i) (vec-functor {a} o)
