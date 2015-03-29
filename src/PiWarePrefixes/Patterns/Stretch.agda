@@ -9,18 +9,17 @@ open import Data.Nat using (ℕ; zero; suc; _*_; _+_; _<_; s≤s)
 open import Data.Nat.Properties as NP using (m≤m+n)
 open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; +-assoc; +-comm; *-comm)
 open import Data.Product renaming (zip to zip×; map to map×)
-open import Data.Vec renaming (applicative to vec-applicative) hiding (group)
+open import Data.Vec renaming (map to mapᵥ; applicative to vec-applicative) hiding (group)
 open import Data.Vec.Extra
 open import Data.Vec.Properties as VecProps
 open import Function using (id; _$_; flip; const; _∘_; _∘′_)
 open import Relation.Binary.PropositionalEquality
 
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
+open import PiWare.Circuit Gt using (ℂ; 𝐂; Nil; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.MinGroups as MinGroups
 open import PiWare.Patterns Gt using (parsN)
-open import PiWarePrefixes.Permutation as P using (Perm; _§_; ε; _◀_; _*)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core Gt
+open import PiWarePrefixes.Plugs.Core Gt using (plug-FM)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Utils
 
@@ -47,7 +46,7 @@ module WithDirection (extract-insert : ExtractInsert) where
     where
     postulate
       in-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (size 1 as)) →
-               in-table as (map f xs) ≡ map f (in-table as xs)
+               in-table as (mapᵥ f xs) ≡ mapᵥ f (in-table as xs)
 
   in-⤨ : ∀ {n} (as : Vec ℕ n) → 𝐂 (size 1 as) (n + size 0 as)
   in-⤨ as = plug-FM (in-FM as)
@@ -61,7 +60,7 @@ module WithDirection (extract-insert : ExtractInsert) where
     where
     postulate
       out-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (n + size 0 as)) →
-               out-table as (map f xs) ≡ map f (out-table as xs)
+               out-table as (mapᵥ f xs) ≡ mapᵥ f (out-table as xs)
     
   out-⤨ : ∀ {n} (as : Vec ℕ n) → 𝐂 (n + size 0 as) (size 1 as)
   out-⤨ as = plug-FM (out-FM as)
@@ -71,46 +70,77 @@ module WithDirection (extract-insert : ExtractInsert) where
                    ⟫ c ∥ id⤨
                    ⟫ out-⤨ as
 
-  out-in-table-identity : ∀ {n} (as : Vec ℕ n) {A} (xs : Vec A (size 1 as)) →
-                          out-table as (in-table as xs) ≡ xs
-  out-in-table-identity {n} as xs with uncurry splitAt-++ (map× id ungroup (extract (group 1 as xs)))
-                                     | ungroup-group-identity as (proj₂ (extract (group 1 as xs)))
-  ... | s | p rewrite s | p = begin
-    ungroup (uncurry insert (extract (group 1 as xs)))
-      ≡⟨ cong ungroup (extract-insert-identity (group 1 as xs)) ⟩
-    ungroup (group 1 as xs)
-      ≡⟨ group-ungroup-identity as xs ⟩
-    xs
-      ∎
-    where
-    open Relation.Binary.PropositionalEquality.≡-Reasoning
+⤙-direction : ExtractInsert
+⤙-direction = record
+  { extf = record { op = < head , tail > ; op-<$> = extf-op-<$> }
+  ; insf = record { op = uncurry _∷_ ; op-<$> = λ f x → refl }
+  ; extf-insf-id = extf-insf-id
+  ; insf-extf-id = insf-extf-id
+  }
+  where
+  extf-op-<$> : ∀ {n} {X Y : Set} (f : X → Y) (x : Vec X (suc n)) →
+                (head (f ∷ replicate f ⊛ x) , tail (f ∷ replicate f ⊛ x)) ≡
+                (f (head x) , (replicate f ⊛ tail x))
+  extf-op-<$> f (x ∷ _) = cong (_,_ (f x)) refl
+  extf-insf-id : {A : Set} {n : ℕ} (xs : Vec A (suc n)) → head xs ∷ tail xs ≡ xs
+  extf-insf-id (_ ∷ _) = refl
+  insf-extf-id : {A : Set} {n : ℕ} (x : A × Vec A n) → (proj₁ x , proj₂ x) ≡ x
+  insf-extf-id (_ , _) = refl
 
-  conv : ∀ {n} (f : ℂ n n) (as : Vec ℕ n) (w : W (size 1 as)) → ⟦ stretch f as ⟧ w ≡ (ungroup ∘ (extract-map ⟦ f ⟧) ∘ (group 1 as)) w
-  conv {n} f as w = begin
-    (⟦ out-⤨ as ⟧ $ ⟦ f ∥ id⤨ ⟧ $ ⟦ in-⤨ as ⟧ w)
-      ≡⟨ expand-plugs ⟩
-    (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
-      ≡⟨ cong (out-table as) (expand-par (in-table as w)) ⟩
-    (ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt' n ∘
-       uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘
-       uncurry _++_ ∘ map× id ungroup ∘ extract ∘ group 1 as) w
-      ≡⟨ cong (ungroup ∘ uncurry insert ∘ map× id (group 0 as)) (splitAt'-++ (cong (map× ⟦ f ⟧ id) (splitAt'-++ refl))) ⟩
-    (ungroup ∘ uncurry insert ∘ map× ⟦ f ⟧ (group 0 as ∘ ungroup) ∘ extract ∘ group 1 as) w
-      ≡⟨ cong (ungroup ∘ uncurry insert) (map×-from-to (extract (group 1 as w))) ⟩
-    (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 as) w
-      ∎
-    where
-    open Relation.Binary.PropositionalEquality.≡-Reasoning
-    expand-plugs : (⟦ out-⤨ as ⟧ ∘ ⟦ f ∥ id⤨ ⟧ ∘ ⟦ in-⤨ as ⟧) w ≡ (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
-    expand-plugs with plug-FM-⟦⟧ (out-FM as) (⟦ f ∥ id⤨ ⟧ (⟦ in-⤨ as ⟧ w))
-                    | plug-FM-⟦⟧ (in-FM as) w
-    ... | r1 | r2 rewrite r1 | r2  = refl
-    expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _) w
-    expand-par w rewrite tabulate∘lookup (proj₂ (splitAt' n w)) = refl
-    map×-from-to : (x : W n × MinGroups Atom 0 as) → (map× {Q = const (MinGroups Atom 0 as)} ⟦ f ⟧ (group 0 as ∘ ungroup)) x ≡ map× ⟦ f ⟧ id x
-    map×-from-to (w' , gs) rewrite ungroup-group-identity as gs = refl
-    splitAt'-++ : ∀ {A : Set} {m n} {x y : Vec A m × Vec A n} (p : x ≡ y) → splitAt' m (uncurry′ _++_ x) ≡ y
-    splitAt'-++ {x = xs , ys} p rewrite splitAt-++ xs ys = p
+infix 6 _⤙_
+_⤙_ : ∀ {n cs} → ℂ {cs} n n → (as : Vec ℕ n) → ℂ {cs} (size 1 as) (size 1 as)
+_⤙_ = WithDirection.stretch ⤙-direction
+
+
+⤚-direction : ExtractInsert
+⤚-direction = record
+  { extf = record { op = < last , init > ; op-<$> = extf-op-<$> }
+  ; insf = record { op = uncurry (flip _∷ʳ_) ; op-<$> = λ f → uncurry (insf-op-<$> f) }
+  ; extf-insf-id = extf-insf-id
+  ; insf-extf-id = uncurry insf-extf-id
+  }
+  where
+  extf-insf-id : {A : Set} {n : ℕ} (xs : Vec A (suc n)) → init xs ∷ʳ last xs ≡ xs
+  extf-insf-id xs with initLast xs
+  extf-insf-id .(xs ∷ʳ x) | xs , x , refl = refl
+
+  insf-extf-id : {A : Set} {n : ℕ} (x : A) (xs : Vec A n) → last (xs ∷ʳ x) , init (xs ∷ʳ x) ≡ x , xs
+  insf-extf-id x xs with initLast (xs ∷ʳ x)
+  insf-extf-id x xs | ys , y , p with ∷ʳ-injective xs ys p
+  insf-extf-id x xs | ys , y , p | xs=ys , x=y rewrite p | x=y | xs=ys = refl
+
+  postulate
+    extf-op-<$> : ∀ {n} {X Y : Set} (f : X → Y) (xs : Vec X (suc n)) →
+      last (mapᵥ f xs) , init (mapᵥ f xs) ≡ f (last xs) , (mapᵥ f (init xs))
+    insf-op-<$> : ∀ {n} {X Y : Set} (f : X → Y) (x : X) (xs : Vec X n) →
+      mapᵥ f xs ∷ʳ f x ≡ mapᵥ f (xs ∷ʳ x)
+
+infix 6 _⤚_
+_⤚_ : ∀ {n cs} → (as : Vec ℕ n) → ℂ {cs} n n → ℂ {cs} (size 1 as) (size 1 as)
+_⤚_ = flip (WithDirection.stretch ⤚-direction)
+
+----------------------------------------
+
+private
+  par-het : ∀ {n p} (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) →
+       ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
+  par-het [] = Nil
+  par-het ((i , c) ∷ cs) = c ∥ (par-het cs)
+
+infix 6 _⤛_
+_⤛_ : ∀ {n p} → ℂ {p} n n → (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) →
+      ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
+_⤛_ f cs = f ⤙ mapᵥ proj₁ cs ⟫ par-het cs
+
+infix 6 _⤜_
+_⤜_ : ∀ {n p} → (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) → ℂ {p} n n →
+      ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
+_⤜_ cs f = par-het cs ⟫ mapᵥ proj₁ cs ⤚ f
+
+
+
+
+
 
 
 --   --------------------------------------------------------------------------------

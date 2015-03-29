@@ -4,26 +4,27 @@ open import PiWare.Gates using (Gates)
 module PiWarePrefixes.Simulation.Properties.Stretching {At : Atomic} (Gt : Gates At) where
 
 open import Data.Fin using (Fin)
-open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Nat using (ℕ; suc; pred; _+_)
 open import Data.Nat.Properties.Simple using (+-comm; +-suc; +-assoc; +-right-identity)
 open import Data.Product renaming (map to map×)
-open import Data.Vec using (Vec; _++_; _∷_; []; [_]; _∷ʳ_)
+open import Data.Vec using (Vec; _++_; _∷_; []; [_]; _∷ʳ_; replicate; splitAt)
                      renaming (sum to sumᵥ; map to mapᵥ)
 open import Data.Vec.Extra using (splitAt')
-open import Function using (id; _$_; _∘_; _∘′_; _⟨_⟩_)
+open import Function using (id; const; flip; _$_; _∘_; _∘′_; _⟨_⟩_)
 open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; cong₂; sym; _≡_; subst; trans)
 
 open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups as MinGroups
-open import PiWarePrefixes.Patterns.Core Gt using (_⤚_; ⤚-direction; _⤙_; ⤙-direction)
-import PiWarePrefixes.Patterns.Stretch Gt as Stretch
+open import PiWarePrefixes.Patterns.Stretch Gt as Stretch
+  using (_⤚_; ⤚-direction; _⤙_; ⤙-direction)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWarePrefixes.Simulation.Properties Gt
+open import PiWarePrefixes.Utils using (splitAt-++)
 
 private
   import Data.Vec.Equality
@@ -33,18 +34,45 @@ open Atomic At using (W; Atom)
 
 module WithDirection (extract-insert : ExtractInsert) where
   open MinGroups.WithExtractInsert extract-insert public
-  open Stretch.WithDirection extract-insert public
+  open Stretch.WithDirection extract-insert
+  open PropEq.≡-Reasoning
 
   -- A note in general:
   -- Many of these proofs could be written more easily by rewriting with
   -- conv. However, this makes agda very slow so we try not to do that.
+
+  conv : ∀ {n} (f : ℂ n n) (as : Vec ℕ n) (w : W (size 1 as)) → ⟦ stretch f as ⟧ w ≡ (ungroup ∘ (extract-map ⟦ f ⟧) ∘ (group 1 as)) w
+  conv {n} f as w = begin
+    (⟦ out-⤨ as ⟧ $ ⟦ f ∥ id⤨ ⟧ $ ⟦ in-⤨ as ⟧ w)
+      ≡⟨ expand-plugs ⟩
+    (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
+      ≡⟨ cong (out-table as) (expand-par (in-table as w)) ⟩
+    (ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt' n ∘
+       uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘
+       uncurry _++_ ∘ map× id ungroup ∘ extract ∘ group 1 as) w
+      ≡⟨ cong (ungroup ∘ uncurry insert ∘ map× id (group 0 as)) (splitAt'-++ (cong (map× ⟦ f ⟧ id) (splitAt'-++ refl))) ⟩
+    (ungroup ∘ uncurry insert ∘ map× ⟦ f ⟧ (group 0 as ∘ ungroup) ∘ extract ∘ group 1 as) w
+      ≡⟨ cong (ungroup ∘ uncurry insert) (map×-from-to (extract (group 1 as w))) ⟩
+    (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 as) w
+      ∎
+    where
+    open import Data.Vec.Properties
+    expand-plugs : (⟦ out-⤨ as ⟧ ∘ ⟦ f ∥ id⤨ ⟧ ∘ ⟦ in-⤨ as ⟧) w ≡ (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
+    expand-plugs with plug-FM-⟦⟧ (out-FM as) (⟦ f ∥ id⤨ ⟧ (⟦ in-⤨ as ⟧ w))
+                    | plug-FM-⟦⟧ (in-FM as) w
+    ... | r1 | r2 rewrite r1 | r2  = refl
+    expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _) w
+    expand-par w rewrite tabulate∘lookup (proj₂ (splitAt' n w)) = refl
+    map×-from-to : (x : W n × MinGroups Atom 0 as) → (map× {Q = const (MinGroups Atom 0 as)} ⟦ f ⟧ (group 0 as ∘ ungroup)) x ≡ map× ⟦ f ⟧ id x
+    map×-from-to (w' , gs) rewrite ungroup-group-identity as gs = refl
+    splitAt'-++ : ∀ {A : Set} {m n} {x y : Vec A m × Vec A n} (p : x ≡ y) → splitAt' m (uncurry′ _++_ x) ≡ y
+    splitAt'-++ {x = xs , ys} p rewrite splitAt-++ xs ys = p
 
   stretch-cong : ∀ {m n} {f : ℂ m m} {g : ℂ n n} {as : Vec ℕ m} {bs : Vec ℕ n} →
                  f ≈⟦⟧ g → as VE.≈ bs → stretch f as ≈⟦⟧ stretch g bs
   stretch-cong {f = f} {g} {as} (Mk≈⟦⟧ refl f≈g) q with VE.to-≡ q
   ... | refl = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
     where
-    open PropEq.≡-Reasoning
     helper : ∀ w → ⟦ stretch f as ⟧ w ≡ ⟦ stretch g as ⟧ w
     helper w = begin
       ⟦ stretch f as ⟧ w
@@ -59,7 +87,6 @@ module WithDirection (extract-insert : ExtractInsert) where
   preserves-id : ∀ {n} (as : Vec ℕ n) → stretch (id⤨ {n}) as ≈⟦⟧ id⤨ {sumᵥ (mapᵥ suc as)}
   preserves-id {n} as = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
     where
-    open PropEq.≡-Reasoning
     helper : ∀ w → ⟦ stretch id⤨ as ⟧ w ≡ ⟦ id⤨ ⟧ w
     helper w = begin
       ⟦ stretch id⤨ as ⟧ w
@@ -75,10 +102,21 @@ module WithDirection (extract-insert : ExtractInsert) where
       ⟦ id⤨ ⟧ w
         ∎
 
+  by-identity : ∀ {n} (f : ℂ n n) → stretch f (replicate 0) ≈⟦⟧ f
+  by-identity {n} f = Mk≈⟦⟧ (pi n) helper
+    where
+    pi : ∀ n → size 1 (replicate {n = n} 0) ≡ n
+    pi Data.Nat.zero = refl
+    pi (suc n) = cong suc (pi n)
+    postulate
+      lem : ∀ {w₁ : W (size 1 (replicate {n = n} 0))} {w₂ : W n} (w≈w : w₁ VE.≈ w₂) →
+          (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 (replicate 0)) w₁ VE.≈ ⟦ f ⟧ w₂
+    helper : stretch f (replicate 0) ≈e f
+    helper {w₁} {w₂} w≈w = VE.from-≡ (conv f (replicate 0) w₁) ⟨ VE.trans ⟩ lem w≈w
+
   ⟫-distrib : ∀ {n} (as : Vec ℕ n) (f g : ℂ n n) → (stretch f as) ⟫ (stretch g as) ≈⟦⟧ stretch (f ⟫ g) as
   ⟫-distrib {n} as f g = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
     where
-    open PropEq.≡-Reasoning
     helper : ∀ w → ⟦ (stretch f as) ⟫ (stretch g as) ⟧ w ≡ ⟦ stretch (f ⟫ g) as ⟧ w
     helper w = begin
       (⟦ stretch g as ⟧ ∘ ⟦ stretch f as ⟧) w
@@ -126,6 +164,42 @@ module WithDirection (extract-insert : ExtractInsert) where
               ⟨ VE.trans ⟩ VE.from-≡ (sym (cong₂ _++_ (conv f as (proj₁ (splitAt' (size 1 as) w₂)))
                                                       (conv g bs (proj₂ (splitAt' (size 1 as) w₂)))))
 
+  private
+    x+size1xs : ∀ {m} → Vec ℕ (suc m) → ℕ
+    x+size1xs (x ∷ xs) = x + size 1 xs
+
+    join-minGroups : ∀ {n} (as : Vec ℕ n) (bs : Vec ℕ (size 1 as)) → Vec ℕ n
+    join-minGroups as = map-to-vec x+size1xs ∘ group 1 as
+
+  postulate
+    lep : ∀ {n} (as : Vec ℕ n) (bs : Vec ℕ (size 1 as)) (f : W n → W n) →
+        {w₁ : W (size 1 bs)} {w₂ : W (size 1 (join-minGroups as bs))} (w≈w : w₁ VE.≈ w₂) →
+        (ungroup ∘ extract-map (ungroup ∘ extract-map f ∘ group 1 as) ∘ group 1 bs) w₁
+        VE.≈
+        (ungroup ∘ extract-map f ∘ group 1 (join-minGroups as bs)) w₂
+
+  join : ∀ {n} (as : Vec ℕ n) (bs : Vec ℕ (size 1 as)) (f : ℂ n n) →
+    stretch (stretch f as) bs ≈⟦⟧ stretch f (join-minGroups as bs)
+  join as bs f = Mk≈⟦⟧ (pi as bs) helper
+    where
+    pi : ∀ {n} (as : Vec ℕ n) (bs : Vec ℕ (size 1 as)) →
+         size 1 bs ≡ size 1 (join-minGroups as bs)
+    pi [] [] = refl
+    pi (a ∷ as) bs with splitAt (1 + a) bs
+    pi (a ∷ as) .(x ∷ xs ++ ys) | x ∷ xs , ys , refl rewrite sym (pi as ys) = size-++ (x ∷ xs) ys
+
+    lem : ∀ {w₁ : W (size 1 bs)} {w₂ : W (size 1 (join-minGroups as bs))} (w≈w : w₁ VE.≈ w₂) →
+          (ungroup ∘ extract-map (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 as) ∘ group 1 bs) w₁
+          VE.≈
+          (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 (join-minGroups as bs)) w₂
+    lem w≈w = lep as bs ⟦ f ⟧ w≈w
+
+    helper : stretch (stretch f as) bs ≈e stretch f (join-minGroups as bs)
+    helper {w₁} {w₂} w≈w = VE.from-≡ (conv (stretch f as) bs w₁)
+              ⟨ VE.trans ⟩ VE.from-≡ (cong (ungroup ∘ uncurry insert) (cong₂ _,_ (conv f as (proj₁ (extract (group 1 bs w₁)))) refl))
+              ⟨ VE.trans ⟩ lem w≈w
+              ⟨ VE.trans ⟩ VE.from-≡ (sym (conv f (join-minGroups as bs) w₂))
+
 --------------------------------------------------------------------------------
 
 module With-⤙ = WithDirection ⤙-direction
@@ -151,31 +225,28 @@ module With-⤚ = WithDirection ⤚-direction
 
 
 -- Stretch distributes over ⟫
-⤙-⟫-distrib : ∀ {n} (xs : Vec ℕ n) (f g : ℂ n n) → (f ⤙ xs) ⟫ (g ⤙ xs) ≈⟦⟧ (f ⟫ g) ⤙ xs
+⤙-⟫-distrib : ∀ {n} (xs : Vec ℕ n) (f g : ℂ n n) → f ⤙ xs ⟫ g ⤙ xs ≈⟦⟧ (f ⟫ g) ⤙ xs
 ⤙-⟫-distrib = With-⤙.⟫-distrib
 
-⤚-⟫-distrib : ∀ {n} (xs : Vec ℕ n) (f g : ℂ n n) → (xs ⤚ f) ⟫ (xs ⤚ g) ≈⟦⟧ xs ⤚ (f ⟫ g)
+⤚-⟫-distrib : ∀ {n} (xs : Vec ℕ n) (f g : ℂ n n) → xs ⤚ f ⟫ xs ⤚ g ≈⟦⟧ xs ⤚ (f ⟫ g)
 ⤚-⟫-distrib = With-⤚.⟫-distrib
 
 
 -- Stretch distributes over ∥
 ⤙-∥-distrib : ∀ {n m} (as : Vec ℕ n) (bs : Vec ℕ m) (f : ℂ n n) (g : ℂ m m) →
-              (f ∥ g) ⤙ (as ++ bs) ≈⟦⟧ (f ⤙ as) ∥ (g ⤙ bs)
+              (f ∥ g) ⤙ (as ++ bs) ≈⟦⟧ f ⤙ as ∥ g ⤙ bs
 ⤙-∥-distrib = With-⤙.∥-distrib
 
 ⤚-∥-distrib : ∀ {n m} (as : Vec ℕ n) (bs : Vec ℕ m) (f : ℂ n n) (g : ℂ m m) →
-              (as ++ bs) ⤚ (f ∥ g) ≈⟦⟧ (as ⤚ f) ∥ (bs ⤚ g)
+              (as ++ bs) ⤚ (f ∥ g) ≈⟦⟧ as ⤚ f ∥ bs ⤚ g
 ⤚-∥-distrib = With-⤚.∥-distrib
 
 
 -- flip law
--- Maybe first this one: f ⤙ ((1 ∷ ys) ∷ʳ 1) ≈⟦⟧
 stretch-flip : ∀ {i k n} (f : ℂ (suc n) (suc n)) (ys : Vec ℕ n) →
                id⤨ {i} ∥ f ⤙ (ys ∷ʳ k) ≈⟦⟧ (i ∷ ys) ⤚ f ∥ id⤨ {k}
 stretch-flip {i} {k} f ys = Mk≈⟦⟧ (pi ys) helper
   where
-  open PropEq.≡-Reasoning
-
   pi : ∀ {n} (ys : Vec ℕ n) → i + size 1 (ys ∷ʳ k) ≡ size 1 (i ∷ ys) + k
   pi [] rewrite +-right-identity k | +-right-identity i = +-suc i k
   pi (y ∷ ys) with pi ys
@@ -190,6 +261,7 @@ stretch-flip {i} {k} f ys = Mk≈⟦⟧ (pi ys) helper
     1 + (i + (1 + (y + size 1 ys)) + k)
       ∎
     where
+    open PropEq.≡-Reasoning
     import Data.Nat.Properties
     open Data.Nat.Properties.SemiringSolver
 
@@ -230,7 +302,7 @@ stretch-derived-1 {n} {j} {k} f xs = begin
 -- Derived stretch law 2
 -- (f × id{#y-1}) ⤙ x ++ y = f ⤙ x ++ [Σy]
 stretch-derived-2 : ∀ {n m} (f : ℂ (suc n) (suc n)) (xs : Vec ℕ n) (y : ℕ) (ys : Vec ℕ m) →
-                    (f ∥ id⤨ {m}) ⤙ ((xs ∷ʳ y) ++ ys) ≈⟦⟧ (f ⤙ (xs ∷ʳ y + size 1 ys))
+                    (f ∥ id⤨ {m}) ⤙ ((xs ∷ʳ y) ++ ys) ≈⟦⟧ f ⤙ (xs ∷ʳ y + size 1 ys)
 stretch-derived-2 {n} {m} f xs y ys = begin
   (f ∥ id⤨ {m}) ⤙ ((xs ∷ʳ y) ++ ys)
     ≈⟦⟧⟨ ⤙-∥-distrib (xs ∷ʳ y) ys f id⤨ ⟩

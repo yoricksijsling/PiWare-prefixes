@@ -5,7 +5,7 @@ open import Data.Nat using (ℕ; zero; suc; _*_; _+_; _<_; s≤s)
 open import Data.Nat.Properties as NP using (m≤m+n)
 open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; *-comm)
 open import Data.Vec using (Vec; sum; []; _∷_) renaming (applicative to vec-applicative)
-open import Function using (id; _$_; _∘′_)
+open import Function using (id; _$_; _∘′_; _⟨_⟩_)
 
 open import Data.Fin using (toℕ)
 open import Data.Nat.Properties.Simple using (+-assoc; +-comm)
@@ -31,6 +31,12 @@ data MinGroups (A : Set) (i : ℕ) : ∀ {n} (as : Vec ℕ n) → Set where
 size : ∀ (i : ℕ) {n} (as : Vec ℕ n) → ℕ
 size i as = sum (map (_+_ i) as)
 
+size-++ : ∀ {m n} (as : Vec ℕ m) (bs : Vec ℕ n) →
+          size 1 (as ++ bs) ≡ size 1 as + size 1 bs
+size-++ [] bs = refl
+size-++ (a ∷ as) bs = cong (suc) (cong (_+_ a) (size-++ as bs)
+                        ⟨ trans ⟩ sym (+-assoc a (size 1 as) (size 1 bs)))
+
 group : ∀ {A} i {n} (as : Vec ℕ n) (xs : Vec A (size i as)) → MinGroups A i as
 group i [] [] = []
 group i (a ∷ as) = uncurry _∷_ ∘′ map× id (group i as) ∘ splitAt' (i + a)
@@ -53,6 +59,16 @@ ungroup-group-identity {i = i} (a ∷ as) (g ∷ gs) with splitAt-++ g (ungroup 
 
 ----------------------------------------
 -- Split and concat
+
+-- mapᵍ : ∀ {A B i n} {as : Vec ℕ n} (f : ∀ {m} → Vec A m → Vec B m) →
+--        MinGroups A i as → MinGroups B i as
+-- mapᵍ f [] = []
+-- mapᵍ f (g ∷ gs) = f g ∷ mapᵍ f gs
+
+map-to-vec : ∀ {A B : Set} {i n} {as : Vec ℕ n} (f : ∀ {m} → Vec A (i + m) → B) →
+             MinGroups A i as → Vec B n
+map-to-vec f [] = []
+map-to-vec f (g ∷ gs) = f g ∷ map-to-vec f gs
 
 _++ᵍ_ : ∀ {A i m n} {as : Vec ℕ m} {bs : Vec ℕ n}
         (gs : MinGroups A i as) (hs : MinGroups A i bs) → MinGroups A i (as ++ bs)
@@ -102,8 +118,10 @@ module WithExtractInsert (extract-insert : ExtractInsert) where
   insert-extract-identity (x ∷ xs) (g ∷ gs) rewrite insf-extf-id (x , g)
                                                   | insert-extract-identity xs gs = refl
 
+  -- extract-map should be equal to something like: mapᵍ (op insf ∘ map× f id ∘ op extf)
   extract-map : ∀ {A i n} {as : Vec ℕ n} → (Vec A n → Vec A n) → MinGroups A (suc i) as → MinGroups A (suc i) as
   extract-map f = uncurry insert ∘ map× f id ∘ extract
+  
 
   -- extract-map is a congruence
 

@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; s
 
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
-open import PiWarePrefixes.Patterns.Core Gt using (_⤚_; _⤙_)
+open import PiWarePrefixes.Patterns.Stretch Gt using (_⤚_; _⤙_)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
