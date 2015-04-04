@@ -5,7 +5,7 @@ module PiWarePrefixes.Simulation.Equality.Core {At : Atomic} (Gt : Gates At) whe
 
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; uncurry)
-open import Function using (id)
+open import Function using (id; _∘_)
 import Relation.Binary.Indexed as I
 open import Relation.Binary.PropositionalEquality as PropEq using (_≡_; refl)
 
@@ -84,6 +84,19 @@ easy-≈⟦⟧ {i} {f = f} {g} f≈g = Mk≈⟦⟧ refl to-≈e
     ; trans = ≈⟦⟧-trans
     }
   }
+
+reindex-setoid : ∀ {i j s₁ s₂} {I : Set i} {J : Set j} (f : J → I) → I.Setoid I s₁ s₂ → I.Setoid J s₁ s₂
+reindex-setoid f s = record
+  { Carrier = S.Carrier ∘ f
+  ; _≈_ = S._≈_
+  ; isEquivalence = record { refl = E.refl ; sym = E.sym ; trans = E.trans }
+  }
+  where
+  module S = I.Setoid s
+  module E = I.IsEquivalence S.isEquivalence
+
+reindexed-≈⟦⟧-setoid : ∀ {a} {A : Set a} (f : A → ℕ × ℕ) → I.Setoid A _ _
+reindexed-≈⟦⟧-setoid f = reindex-setoid f ≈⟦⟧-setoid
 
 --------------------------------------------------------------------------------
 -- Equational reasoning

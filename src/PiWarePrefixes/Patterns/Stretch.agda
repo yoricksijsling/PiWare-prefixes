@@ -121,21 +121,23 @@ _⤚_ = flip (WithDirection.stretch ⤚-direction)
 
 ----------------------------------------
 
-private
-  par-het : ∀ {n p} (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) →
-       ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
-  par-het [] = Nil
-  par-het ((i , c) ∷ cs) = c ∥ (par-het cs)
+Stretching-ℂ : ∀ {p} → Set
+Stretching-ℂ {p} = (∃ λ i → ℂ {p} (suc i) (suc i))
+
+par-stretching : ∀ {n p} (cs : Vec (Stretching-ℂ {p}) n) →
+     ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
+par-stretching [] = id⤨ {0}
+par-stretching ((i , c) ∷ cs) = c ∥ (par-stretching cs)
 
 infix 6 _⤛_
-_⤛_ : ∀ {n p} → ℂ {p} n n → (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) →
+_⤛_ : ∀ {n p} → ℂ {p} n n → (cs : Vec (Stretching-ℂ {p}) n) →
       ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
-_⤛_ f cs = f ⤙ mapᵥ proj₁ cs ⟫ par-het cs
+_⤛_ f cs = f ⤙ mapᵥ proj₁ cs ⟫ par-stretching cs
 
 infix 6 _⤜_
-_⤜_ : ∀ {n p} → (cs : Vec (∃ λ i → ℂ {p} (suc i) (suc i)) n) → ℂ {p} n n →
+_⤜_ : ∀ {n p} → (cs : Vec (Stretching-ℂ {p}) n) → ℂ {p} n n →
       ℂ {p} (size 1 (mapᵥ proj₁ cs)) (size 1 (mapᵥ proj₁ cs))
-_⤜_ cs f = par-het cs ⟫ mapᵥ proj₁ cs ⤚ f
+_⤜_ cs f = par-stretching cs ⟫ mapᵥ proj₁ cs ⤚ f
 
 
 
