@@ -7,22 +7,20 @@ open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-right-identity; +-assoc)
 open import Data.Product using (_,_; proj₁; proj₂)
+open import Data.Sum using (inj₁; inj₂; [_,_]′)
 open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_) renaming (applicative to vec-applicative)
 open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin)
 open import Function using (id; _$_; _∘_; flip)
-open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; trans)
-
-open import PiWarePrefixes.Circuit.Context.Core Gt
-open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
+open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_; _⑆_)
 open import PiWarePrefixes.Patterns.Stretch Gt using (_⤚_; _⤙_)
 open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
-  using (_≈⟦⟧_; Mk≈⟦⟧; easy-≈⟦⟧; ≈⟦⟧-trans; _≈e_)
 open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
+open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; trans)
 
 open Atomic At using (W)
 open Morphism using (op; op-<$>)
@@ -78,6 +76,13 @@ pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-FM-∘ M₁ M₂) (plug-id-M (FM
 ----------------------------------------------------
 -- Sequence
 
+infixl 4 _⟫-cong_
+_⟫-cong_ : ∀ {i¹ m¹ o¹} {c¹ : ℂ i¹ m¹} {d¹ : ℂ m¹ o¹} →
+         ∀ {i² m² o²} {c² : ℂ i² m²} {d² : ℂ m² o²} →
+           (c≈c : c¹ SimEq.≈⟦⟧ c²) →  (d≈d : d¹ SimEq.≈⟦⟧ d²) →
+           c¹ ⟫ d¹ SimEq.≈⟦⟧ c² ⟫ d²
+(Mk≈⟦⟧ refl c≈c) ⟫-cong (Mk≈⟦⟧ refl d≈d) = easy-≈⟦⟧ (d≈d ∘ c≈c ∘ VE.refl)
+
 -- f ⟫ id ≡ f
 ⟫-right-identity : ∀ {i o} (f : ℂ i o) → f ⟫ id⤨ ≈⟦⟧ f
 ⟫-right-identity f = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w → id⤨-id (⟦ f ⟧ w)
@@ -93,6 +98,18 @@ pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-FM-∘ M₁ M₂) (plug-id-M (FM
 
 ----------------------------------------------------
 -- Parallel
+
+infixr 5 _∥-cong_
+_∥-cong_ : ∀ {i¹ o¹ j¹ p¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ p¹} →
+         ∀ {i² o² j² p²} {c² : ℂ i² o²} {d² : ℂ j² p²} →
+           (c≈c : c¹ SimEq.≈⟦⟧ c²) →  (d≈d : d¹ SimEq.≈⟦⟧ d²) →
+           c¹ ∥ d¹ SimEq.≈⟦⟧ c² ∥ d²
+(Mk≈⟦⟧ refl c≈c) ∥-cong (Mk≈⟦⟧ refl d≈d) = easy-≈⟦⟧ (λ w → helper (c≈c (VE.refl _)) (d≈d (VE.refl _)))
+  where
+  helper : ∀ {n₁ n₂ m₁ m₂} {x : W n₁} {y : W n₂} {u : W m₁} {v : W m₂} → x VE.≈ y → u VE.≈ v → x ++ u VE.≈ y ++ v
+  helper x≈y u≈v with VE.length-equal x≈y | VE.length-equal u≈v
+  ... | refl | refl with VE.to-≡ x≈y | VE.to-≡ u≈v
+  ... | refl | refl = VE.refl _
 
 -- id{0} || f ≡ f
 ∥-left-identity : ∀ {i o} (f : ℂ i o) → id⤨ {0} ∥ f ≈⟦⟧ f
@@ -171,3 +188,18 @@ pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-FM-∘ M₁ M₂) (plug-id-M (FM
   imp w rewrite splitAt-++ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
 -- seq-par-distrib can be generalized to arbitrary width and height..
 
+
+----------------------------------------------------
+-- ⑆
+
+infixr 5 _⑆-cong_
+_⑆-cong_ : ∀ {i¹ j¹ o¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ o¹} →
+         ∀ {i² j² o²} {c² : ℂ i² o²} {d² : ℂ j² o²} →
+         (c≈c : c¹ SimEq.≈⟦⟧ c²) →  (d≈d : d¹ SimEq.≈⟦⟧ d²) →
+         c¹ ⑆ d¹ SimEq.≈⟦⟧ c² ⑆ d²
+_⑆-cong_ {i¹} (Mk≈⟦⟧ refl c≈c) (Mk≈⟦⟧ refl d≈d) = easy-≈⟦⟧ helper
+  where
+  helper : ∀ w → [ _ , _ ]′ (untag {i¹} w) VE.≈ [ _ , _ ]′ (untag {i¹} w)
+  helper w with untag {i¹} w
+  helper w | inj₁ x = c≈c (VE.refl x)
+  helper w | inj₂ y = d≈d (VE.refl y)

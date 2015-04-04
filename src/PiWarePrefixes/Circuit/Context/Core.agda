@@ -13,6 +13,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym)
 open import PiWare.Circuit Gt
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq using (Mk≈⟦⟧; easy-≈⟦⟧)
+open import PiWarePrefixes.Simulation.Properties Gt using (_⟫-cong_; _∥-cong_; _⑆-cong_)
 open import PiWare.Synthesizable At using (untag)
 
 open Atomic At using (W)
@@ -84,21 +85,10 @@ infixr 5 _∥●_  _●∥_
 infixr 5 _⑆●_ _●⑆_
 infixl 4 _⟫●_  _●⟫_
 
-bla : {i o : ℕ} {f : ℂ i o} → f SimEq.≈⟦⟧ f
-bla = SimEq.≈⟦⟧-refl
-
 -- Congruence
 -- Shows that a composed circuit is equal up to evaluation if the parts are
 -- equal up to evaluation. This does not seem to imply composability of
 -- equality, because it only goes one way.
-
--- Agda is not able to derive c₁ and c₂ from the type c₁ ≡e c₂
-
-wcong₂ : {o : ℕ → ℕ → ℕ} (f : ∀ {n m} → W n → W m → W (o n m)) →
-         ∀ {n₁ n₂ m₁ m₂} {x y u v} → x VE.≈ y → u VE.≈ v → f {n₁} {m₁} x u VE.≈ f {n₂} {m₂} y v
-wcong₂ f x≈y u≈v with VE.length-equal x≈y | VE.length-equal u≈v
-... | refl | refl with VE.to-≡ x≈y | VE.to-≡ u≈v
-... | refl | refl = VE.refl _
 
 ≈⟦⟧-cong : ∀ {iₓ¹ oₓ¹ iₓ² oₓ² i¹ o¹ i² o²} →
              {cxt¹ : Cxt' iₓ¹ oₓ¹ i¹ o¹} {cxt² : Cxt' iₓ² oₓ² i² o²} →
@@ -106,25 +96,9 @@ wcong₂ f x≈y u≈v with VE.length-equal x≈y | VE.length-equal u≈v
              (cxts : cxt¹ Cxt-≈⟦⟧ cxt²) (holes : c¹ SimEq.≈⟦⟧ c²) →
              plugCxt' cxt¹ c¹ SimEq.≈⟦⟧ plugCxt' cxt² c²
 ≈⟦⟧-cong ● holes = holes
-≈⟦⟧-cong ((Mk≈⟦⟧ refl f≈f) ⟫● cxts) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl g≈g = easy-≈⟦⟧ (g≈g ∘ f≈f ∘ VE.refl)
-≈⟦⟧-cong (cxts ●⟫ (Mk≈⟦⟧ refl g≈g)) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl f≈f = easy-≈⟦⟧ (g≈g ∘ f≈f ∘ VE.refl)
-≈⟦⟧-cong (Mk≈⟦⟧ refl f≈f ∥● cxts) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl g≈g = easy-≈⟦⟧ (λ w → wcong₂ _++_ (f≈f (VE.refl _)) (g≈g (VE.refl _)) )
-≈⟦⟧-cong (cxts ●∥ Mk≈⟦⟧ refl g≈g) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl f≈f = easy-≈⟦⟧ (λ w → wcong₂ _++_ (f≈f (VE.refl _)) (g≈g (VE.refl _)))
-≈⟦⟧-cong (_⑆●_ {i¹} {j¹} (Mk≈⟦⟧ refl f≈f) cxts) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl g≈g = easy-≈⟦⟧ helper
-  where
-  helper : ∀ w → Sum.[ _ , _ ]′ (untag {i¹} w) VE.≈ Sum.[ _ , _ ]′ (untag {i¹} w)
-  helper w with untag {i¹} w
-  helper w | inj₁ x = f≈f (VE.refl x)
-  helper w | inj₂ y = g≈g (VE.refl y)
-≈⟦⟧-cong (_●⑆_ {i¹} {j¹} cxts (Mk≈⟦⟧ refl g≈g)) holes with ≈⟦⟧-cong cxts holes
-... | Mk≈⟦⟧ refl f≈f = easy-≈⟦⟧ helper
-  where
-  helper : ∀ w → Sum.[ _ , _ ]′ (untag {i¹} w) VE.≈ Sum.[ _ , _ ]′ (untag {i¹} w)
-  helper w with untag {i¹} w
-  helper w | inj₁ x = f≈f (VE.refl x)
-  helper w | inj₂ y = g≈g (VE.refl y)
+≈⟦⟧-cong (f≈f ⟫● cxts) holes = f≈f ⟫-cong (≈⟦⟧-cong cxts holes)
+≈⟦⟧-cong (cxts ●⟫ g≈g) holes = (≈⟦⟧-cong cxts holes) ⟫-cong g≈g
+≈⟦⟧-cong (f≈f ∥● cxts) holes = f≈f ∥-cong (≈⟦⟧-cong cxts holes)
+≈⟦⟧-cong (cxts ●∥ g≈g) holes = (≈⟦⟧-cong cxts holes) ∥-cong g≈g
+≈⟦⟧-cong (f≈f ⑆● cxts) holes = f≈f ⑆-cong (≈⟦⟧-cong cxts holes)
+≈⟦⟧-cong (cxts ●⑆ g≈g) holes = (≈⟦⟧-cong cxts holes) ⑆-cong g≈g
