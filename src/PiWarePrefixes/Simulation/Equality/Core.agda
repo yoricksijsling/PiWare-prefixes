@@ -39,15 +39,15 @@ i-equal : ∀ {i₁ o₁ i₂ o₂} {f : ℂ i₁ o₁} {g : ℂ i₂ o₂} →
           f ≈⟦⟧ g → i₁ ≡ i₂
 i-equal (Mk≈⟦⟧ refl f≈g) = refl
 
-o-equal : ∀ {i₁ o₁ i₂ o₂} {f : ℂ i₁ o₁} {g : ℂ i₂ o₂} →
-          f ≈⟦⟧ g → o₁ ≡ o₂
-o-equal (Mk≈⟦⟧ refl f≈g) = VE.length-equal (f≈g (VE.refl dummyW))
-  where
-  open import Data.Fin using (#_)
-  open import Data.Vec using (replicate)
-  dummyW : ∀ {n} → W n
-  dummyW = replicate (Atomic.n→atom At (# 0))
-
+abstract
+  o-equal : ∀ {i₁ o₁ i₂ o₂} {f : ℂ i₁ o₁} {g : ℂ i₂ o₂} →
+            f ≈⟦⟧ g → o₁ ≡ o₂
+  o-equal (Mk≈⟦⟧ refl f≈g) = VE.length-equal (f≈g (VE.refl dummyW))
+    where
+    open import Data.Fin using (#_)
+    open import Data.Vec using (replicate)
+    dummyW : ∀ {n} → W n
+    dummyW = replicate (Atomic.n→atom At (# 0))
 
 -- A convenient function so you can often skip the `with`.
 easy-≈⟦⟧ : ∀ {i o₁ o₂} {f : ℂ i o₁} {g : ℂ i o₂} →
