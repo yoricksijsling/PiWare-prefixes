@@ -12,7 +12,6 @@ AGDA_MODULES=PiWarePrefixes/Atom/Int8 \
              PiWarePrefixes/Patterns/Stretch \
              PiWarePrefixes/Permutation \
              PiWarePrefixes/Plugs/Core \
-             PiWarePrefixes/Samples/Fan \
              PiWarePrefixes/Simulation/Equality/Core \
              PiWarePrefixes/Simulation/Properties/Stretching \
              PiWarePrefixes/Simulation/Properties \

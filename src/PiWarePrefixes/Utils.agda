@@ -3,7 +3,8 @@ module PiWarePrefixes.Utils where
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_,_; proj₁; proj₂; _×_) renaming (map to map×)
-open import Data.Vec using (Vec; _++_; []; _∷_; splitAt; tabulate; _∷ʳ_)
+open import Data.Vec using (Vec; _++_; []; _∷_; [_]; splitAt; tabulate; _∷ʳ_; replicate; _⊛_)
+                     renaming (map to mapᵥ)
 open import Data.Vec.Properties using (∷-injective)
 open import Function using (id; _∘_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
@@ -56,6 +57,14 @@ tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p �
 ∷ʳ-injective {x = x'} {y'} (x ∷ xs) (y ∷ ys) p with ∷-injective p
 ∷ʳ-injective {x = x'} {y'} (x ∷ xs) (y ∷ ys) p | x=y , p' = map× (cong₂ _∷_ x=y) id (∷ʳ-injective xs ys p')
 
+++-∷ʳ : ∀ {a n} {A : Set a} (xs : Vec A n) (x : A) →
+        xs ∷ʳ x VE.≈ xs ++ (x ∷ [])
+++-∷ʳ [] x = VE.refl [ x ]
+++-∷ʳ (y ∷ ys) x = refl ∷-cong (++-∷ʳ ys x)
+
+map-replicate : ∀ {n} {A B : Set} (f : A → B) (x : A) → mapᵥ f (replicate {n = n} x) ≡ replicate (f x)
+map-replicate {zero} f x = refl
+map-replicate {suc n} f x = cong (_∷_ (f x)) (map-replicate f x)
 
 
 --------------------------------------------------------------------------------
