@@ -17,6 +17,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; sym; refl; cong)
 
 open import PiWare.Circuit Gt using (𝐂; Plug)
 open import PiWare.Interface using (Ix)
+open import PiWare.Plugs Gt using (id⤨)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Utils
 
@@ -66,3 +67,6 @@ plug-FM-⟦⟧ {i} {o} M w = begin
     ∎
   where
   open Relation.Binary.PropositionalEquality.≡-Reasoning
+
+rewire⤨ : ∀ {i o} → (p : i ≡ o) → 𝐂 i o
+rewire⤨ refl = id⤨
