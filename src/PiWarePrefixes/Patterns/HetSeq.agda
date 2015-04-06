@@ -1,10 +1,10 @@
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
-module PiWarePrefixes.Patterns.HetSeq {At : Atomic} (Gt : Gates At) where
+module PiWarePrefixes.Patterns.HetSeq {At : Atomic} {Gt : Gates At} where
 
-open import PiWare.Circuit Gt using (ℂ; _⟫_)
-open import PiWarePrefixes.Plugs.Core Gt using (rewire⤨)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; _⟫_)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
 infixl 4 _⟫[_]_

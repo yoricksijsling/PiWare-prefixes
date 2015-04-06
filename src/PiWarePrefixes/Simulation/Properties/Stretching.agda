@@ -13,13 +13,13 @@ open import Data.Vec.Extra using (splitAt′; splitAt-++)
 open import Function using (id; const; flip; _$_; _∘_; _∘′_; _⟨_⟩_)
 open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; cong₂; sym; _≡_; subst; trans)
 
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups as MinGroups
-open import PiWarePrefixes.Patterns.Stretch Gt as Stretch
+open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} as Stretch
   using (_⤚_; ⤚-direction; _⤙_; ⤙-direction)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWarePrefixes.Simulation.Properties Gt

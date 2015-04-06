@@ -1,7 +1,7 @@
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
-module PiWarePrefixes.Patterns.Stretch {At : Atomic} (Gt : Gates At) where
+module PiWarePrefixes.Patterns.Stretch {At : Atomic} {Gt : Gates At} where
 
 open import Category.Functor using (module RawFunctor)
 open import Data.Fin as Fin using (Fin; toℕ)
@@ -15,11 +15,11 @@ open import Data.Vec.Properties as VecProps
 open import Function using (id; _$_; flip; const; _∘_; _∘′_)
 open import Relation.Binary.PropositionalEquality
 
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.MinGroups as MinGroups
 open import PiWare.Patterns Gt using (parsN)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core Gt using (plug-FM)
+open import PiWarePrefixes.Plugs.Core using (plug-FM)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Utils
 

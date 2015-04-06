@@ -1,7 +1,7 @@
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
-module PiWarePrefixes.Plugs.Core {At : Atomic} (Gt : Gates At) where
+module PiWarePrefixes.Plugs.Core {At : Atomic} {Gt : Gates At} where
 
 open import Data.Fin using (Fin; toℕ)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _≟_)
@@ -15,7 +15,7 @@ open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (False; fromWitnessFalse)
 open import Relation.Binary.PropositionalEquality using (_≡_; sym; refl; cong)
 
-open import PiWare.Circuit Gt using (𝐂; Plug)
+open import PiWare.Circuit {Gt = Gt} using (𝐂; Plug)
 open import PiWare.Interface using (Ix)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWare.Simulation Gt using (⟦_⟧)

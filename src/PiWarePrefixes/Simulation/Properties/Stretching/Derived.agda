@@ -8,13 +8,13 @@ open import Data.Product using (proj₁; proj₂; _,_; ,_; <_,_>)
 open import Data.Vec using (Vec; _++_; _∷_; []; [_]; _∷ʳ_; replicate; splitAt)
                      renaming (sum to sumᵥ; map to mapᵥ)
 open import PiWarePrefixes.MinGroups using (size)
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_; σ)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; Plug; _⟫_; _∥_; σ)
 open import PiWarePrefixes.Circuit.Context.Core Gt
-open import PiWarePrefixes.Patterns.HetSeq Gt
-open import PiWarePrefixes.Patterns.Stretch Gt as Stretch
+open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
+open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} as Stretch
   using (_⤚_; ⤚-direction; _⤙_; ⤙-direction; _⤛_; _⤜_; Stretching-ℂ; par-stretching)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core Gt using (rewire⤨)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym)
 open import PiWarePrefixes.Simulation.Properties Gt

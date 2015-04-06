@@ -12,11 +12,11 @@ open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_) ren
 open import Data.Vec.Extra using (splitAt-++; ++-assoc)
 open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin; tabulate∘lookup)
 open import Function using (id; _$_; _∘_; _⟨_⟩_; flip)
-open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
-open import PiWarePrefixes.Patterns.Stretch Gt using (_⤚_; _⤙_)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; σ; Plug; _⟫_; _∥_)
+open import PiWarePrefixes.Patterns.Stretch using (_⤚_; _⤙_)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWare.Plugs.Core using (_⤪_)
-open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWare.Synthesizable At

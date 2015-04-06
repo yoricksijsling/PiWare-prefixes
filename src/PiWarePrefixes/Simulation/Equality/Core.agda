@@ -9,7 +9,7 @@ open import Function using (id; _∘_)
 import Relation.Binary.Indexed as I
 open import Relation.Binary.PropositionalEquality as PropEq using (_≡_; refl)
 
-open import PiWare.Circuit Gt
+open import PiWare.Circuit {Gt = Gt}
 open import PiWare.Simulation Gt
 open import PiWare.Synthesizable At using (untag)
 

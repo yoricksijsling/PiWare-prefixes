@@ -4,8 +4,8 @@ open import PiWare.Gates using (Gates)
 module PiWarePrefixes.Simulation.Properties.HetSeq {At : Atomic} (Gt : Gates At) where
 
 open import Function using (_⟨_⟩_)
-open import PiWare.Circuit Gt using (ℂ; _⟫_; _∥_)
-open import PiWarePrefixes.Patterns.HetSeq Gt
+open import PiWare.Circuit {Gt = Gt} using (ℂ; _⟫_; _∥_)
+open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Simulation.Properties Gt
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
