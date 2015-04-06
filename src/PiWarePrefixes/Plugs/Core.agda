@@ -29,6 +29,7 @@ open Morphism using (op;  op-<$>)
 ≢0-*-≢0 (suc n) zero _ ()
 ≢0-*-≢0 (suc n) (suc m) _ _ = tt
 
+{-
 zip⤨ : ∀ {k n} → 𝐂 (k * n) (n * k)
 zip⤨ {k} {n} = p k n
   where
@@ -47,15 +48,15 @@ zip⤨ {k} {n} = p k n
       dm : DivMod (toℕ o) k
       dm = (toℕ o divMod k) {k≢0}
       val = n * toℕ (DivMod.remainder dm) + DivMod.quotient dm
+-}
 
 plug-FM : ∀ {i o} → Morphism (vec-functor i) (vec-functor o) → 𝐂 i o
-plug-FM M = Plug (flip lookup (op M (allFin _)))
+plug-FM M = Plug (op M (allFin _))
 
-plug-FM-⟦⟧ : ∀ {i o} (M : Morphism (vec-functor i) (vec-functor o)) (w : W i) → ⟦ plug-FM M ⟧ w ≡ op M w
--- plug-FM-⟦⟧ = {!!}
-plug-FM-⟦⟧ {i} {o} M w = begin
+plug-FM-⟦⟧ : ∀ {i o} (M : Morphism (vec-functor i) (vec-functor o)) (w : W i) →
+             ⟦ plug-FM M ⟧ w ≡ op M w
+plug-FM-⟦⟧ {i} M w = begin
   tabulate (λ fin → flip lookup w (lookup fin (op M (allFin _))))
-    -- ≡⟨ tabulate-extensionality (λ fin → sym (op-<$> (M-∘ (lookup-morphism fin) M) (flip lookup w) _)) ⟩
     ≡⟨ tabulate-extensionality (λ fin → sym (op-<$> (AM-to-FM (lookup-morphism fin)) (flip lookup w) _)) ⟩
   tabulate (λ fin → lookup fin (map (flip lookup w) (op M (allFin _))))
     ≡⟨ tabulate-extensionality (λ fin → sym (cong (lookup fin) (op-<$> M (flip lookup w) _))) ⟩

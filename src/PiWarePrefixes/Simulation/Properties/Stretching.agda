@@ -9,7 +9,7 @@ open import Data.Nat.Properties.Simple using (+-comm; +-suc; +-assoc; +-right-id
 open import Data.Product renaming (map to map×)
 open import Data.Vec using (Vec; _++_; _∷_; []; [_]; _∷ʳ_; replicate; splitAt)
                      renaming (sum to sumᵥ; map to mapᵥ)
-open import Data.Vec.Extra using (splitAt')
+open import Data.Vec.Extra using (splitAt′; splitAt-++)
 open import Function using (id; const; flip; _$_; _∘_; _∘′_; _⟨_⟩_)
 open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; cong₂; sym; _≡_; subst; trans)
 
@@ -23,7 +23,6 @@ open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWarePrefixes.Simulation.Properties Gt
-open import PiWarePrefixes.Utils using (splitAt-++)
 
 private
   import Data.Vec.Equality
@@ -53,10 +52,10 @@ module WithDirection (extract-insert : ExtractInsert) where
       ≡⟨ expand-plugs ⟩
     (out-table as ∘ ⟦ f ∥ id⤨ ⟧ ∘ in-table as) w
       ≡⟨ cong (out-table as) (expand-par (in-table as w)) ⟩
-    (ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt' n ∘
-       uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _ ∘
+    (ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt′ n ∘
+       uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt′ _ ∘
        uncurry _++_ ∘ map× id ungroup ∘ extract ∘ group 1 as) w
-      ≡⟨ cong (ungroup ∘ uncurry insert ∘ map× id (group 0 as)) (splitAt'-++ (cong (map× ⟦ f ⟧ id) (splitAt'-++ refl))) ⟩
+      ≡⟨ cong (ungroup ∘ uncurry insert ∘ map× id (group 0 as)) (splitAt′-++ (cong (map× ⟦ f ⟧ id) (splitAt′-++ refl))) ⟩
     (ungroup ∘ uncurry insert ∘ map× ⟦ f ⟧ (group 0 as ∘ ungroup) ∘ extract ∘ group 1 as) w
       ≡⟨ cong (ungroup ∘ uncurry insert) (map×-from-to (extract (group 1 as w))) ⟩
     (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 as) w
@@ -67,13 +66,13 @@ module WithDirection (extract-insert : ExtractInsert) where
     expand-plugs with plug-FM-⟦⟧ (out-FM as) (⟦ f ∥ id⤨ ⟧ (⟦ in-⤨ as ⟧ w))
                     | plug-FM-⟦⟧ (in-FM as) w
     ... | r1 | r2 rewrite r1 | r2  = refl
-    expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt' _) w
-    expand-par w rewrite tabulate∘lookup (proj₂ (splitAt' n w)) = refl
+    expand-par : ∀ (w : W (n + size 0 as)) → ⟦ f ∥ id⤨ ⟧ w ≡ (uncurry′ _++_ ∘ map× ⟦ f ⟧ id ∘ splitAt′ _) w
+    expand-par w rewrite id⤨-id (proj₂ (splitAt′ n w)) = refl
     map×-from-to : (x : W n × MinGroups Atom 0 as) → (map× {Q = const (MinGroups Atom 0 as)} ⟦ f ⟧ (group 0 as ∘ ungroup)) x ≡ map× ⟦ f ⟧ id x
     map×-from-to (w' , gs) rewrite ungroup-group-identity as gs = refl
-    splitAt'-++ : ∀ {A : Set} {m n} {x y : Vec A m × Vec A n} (p : x ≡ y) → splitAt' m (uncurry′ _++_ x) ≡ y
-    splitAt'-++ {x = xs , ys} p rewrite splitAt-++ xs ys = p
-
+    splitAt′-++ : ∀ {A : Set} {m n} {x y : Vec A m × Vec A n} (p : x ≡ y) → splitAt′ m (uncurry′ _++_ x) ≡ y
+    splitAt′-++ {x = xs , ys} p rewrite splitAt-++ _ xs ys = p
+  
   stretch-cong : ∀ {m n} {f : ℂ m m} {g : ℂ n n} {as : Vec ℕ m} {bs : Vec ℕ n} →
                  f ≈⟦⟧ g → as VE.≈ bs → stretch f as ≈⟦⟧ stretch g bs
   stretch-cong {f = f} {g} {as} (Mk≈⟦⟧ refl f≈g) q with VE.to-≡ q
@@ -150,25 +149,25 @@ module WithDirection (extract-insert : ExtractInsert) where
       split-group-commute : ∀ {A} i {m n} (as : Vec ℕ m) {bs : Vec ℕ n} →
         {xs : Vec A (size i (as ++ bs))} {ys : Vec A (size i as + size i bs)} →
         (p : xs VE.≈ ys) →
-        (map× (group i as) (group i bs) ∘ splitAt' (size i as)) ys ≡ (splitᵍ as ∘ group i (as ++ bs)) xs
+        (map× (group i as) (group i bs) ∘ splitAt′ (size i as)) ys ≡ (splitᵍ as ∘ group i (as ++ bs)) xs
 
     group-++-commute : ∀ {w₁ : W (size 1 (as ++ bs))} {w₂ : W (size 1 as + size 1 bs)} (w≈w : w₁ VE.≈ w₂) →
            (ungroup ∘ uncurry _++ᵍ_ ∘ map× (extract-map ⟦ f ⟧)
                                            (extract-map ⟦ g ⟧) ∘ splitᵍ as ∘ group 1 (as ++ bs)) w₁
              VE.≈
            (uncurry _++_ ∘ map× (ungroup ∘ extract-map ⟦ f ⟧ ∘ group 1 as)
-                                (ungroup ∘ extract-map ⟦ g ⟧ ∘ group 1 bs) ∘ splitAt' (size 1 as)) w₂
+                                (ungroup ∘ extract-map ⟦ g ⟧ ∘ group 1 bs) ∘ splitAt′ (size 1 as)) w₂
     group-++-commute {w₁} {w₂} w≈w = VE.from-≡ (sym (cong (ungroup ∘ uncurry _++ᵍ_ ∘ map× (extract-map ⟦ f ⟧) (extract-map ⟦ g ⟧))
                                                           (split-group-commute 1 as w≈w)))
                          ⟨ VE.trans ⟩ uncurry ++-ungroup-commute ((map× (extract-map ⟦ f ⟧ ∘ group 1 as)
-                                                                 (extract-map ⟦ g ⟧ ∘ group 1 bs) ∘ splitAt' (size 1 as)) w₂)
+                                                                 (extract-map ⟦ g ⟧ ∘ group 1 bs) ∘ splitAt′ (size 1 as)) w₂)
 
     helper : stretch (f ∥ g) (as ++ bs) ≈e (stretch f as) ∥ (stretch g bs)
     helper {w₁} {w₂} w≈w = VE.from-≡ (stretch-to-spec (f ∥ g) (as ++ bs) w₁)
               ⟨ VE.trans ⟩ VE.from-≡ (cong ungroup (extract-map-++-commute as ⟦ f ⟧ ⟦ g ⟧ (group 1 (as ++ bs) w₁)))
               ⟨ VE.trans ⟩ group-++-commute w≈w
-              ⟨ VE.trans ⟩ VE.from-≡ (sym (cong₂ _++_ (stretch-to-spec f as (proj₁ (splitAt' (size 1 as) w₂)))
-                                                      (stretch-to-spec g bs (proj₂ (splitAt' (size 1 as) w₂)))))
+              ⟨ VE.trans ⟩ VE.from-≡ (sym (cong₂ _++_ (stretch-to-spec f as (proj₁ (splitAt′ (size 1 as) w₂)))
+                                                      (stretch-to-spec g bs (proj₂ (splitAt′ (size 1 as) w₂)))))
 
   postulate
     lep : ∀ {n} (as : Vec ℕ n) (bs : Vec ℕ (size 1 as)) (f : W n → W n) →
@@ -281,13 +280,13 @@ stretch-flip {i} {k} f ys = Mk≈⟦⟧ (pi ys) helper
 
   postulate
     lem : ∀ {w₁ : W (i + size 1 (ys ∷ʳ k))} {w₂ : W (size 1 (i ∷ ys) + k)} (w≈w : w₁ VE.≈ w₂) →
-          (uncurry _++_ ∘ map× id (ungroup ∘ With-⤙.extract-map ⟦ f ⟧ ∘ group 1 (ys ∷ʳ k)) ∘ splitAt' i) w₁ VE.≈
-          (uncurry _++_ ∘ map× (ungroup ∘ With-⤚.extract-map ⟦ f ⟧ ∘ group 1 (i ∷ ys)) id ∘ splitAt' (size 1 (i ∷ ys))) w₂
+          (uncurry _++_ ∘ map× id (ungroup ∘ With-⤙.extract-map ⟦ f ⟧ ∘ group 1 (ys ∷ʳ k)) ∘ splitAt′ i) w₁ VE.≈
+          (uncurry _++_ ∘ map× (ungroup ∘ With-⤚.extract-map ⟦ f ⟧ ∘ group 1 (i ∷ ys)) id ∘ splitAt′ (size 1 (i ∷ ys))) w₂
 
   helper : id⤨ {i} ∥ f ⤙ (ys ∷ʳ k) ≈e (i ∷ ys) ⤚ f ∥ id⤨ {k}
-  helper {w₁} {w₂} w≈w = VE.from-≡ (cong₂ _++_ (id⤨-id (proj₁ (splitAt' i w₁)))
-                                               (With-⤙.stretch-to-spec f (ys ∷ʳ k) (proj₂ (splitAt' i w₁))))
+  helper {w₁} {w₂} w≈w = VE.from-≡ (cong₂ _++_ (id⤨-id (proj₁ (splitAt′ i w₁)))
+                                               (With-⤙.stretch-to-spec f (ys ∷ʳ k) (proj₂ (splitAt′ i w₁))))
             ⟨ VE.trans ⟩ lem w≈w
-            ⟨ VE.trans ⟩ VE.from-≡ (cong₂ _++_ (sym (With-⤚.stretch-to-spec f (i ∷ ys) (proj₁ (splitAt' (size 1 (i ∷ ys)) w₂))))
-                                               (sym (id⤨-id (proj₂ (splitAt' (size 1 (i ∷ ys)) w₂)))))
+            ⟨ VE.trans ⟩ VE.from-≡ (cong₂ _++_ (sym (With-⤚.stretch-to-spec f (i ∷ ys) (proj₁ (splitAt′ (size 1 (i ∷ ys)) w₂))))
+                                               (sym (id⤨-id (proj₂ (splitAt′ (size 1 (i ∷ ys)) w₂)))))
 

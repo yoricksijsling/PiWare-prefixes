@@ -13,7 +13,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym)
 open import PiWare.Circuit Gt
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq using (Mk≈⟦⟧; easy-≈⟦⟧)
-open import PiWarePrefixes.Simulation.Properties Gt using (_⟫-cong_; _∥-cong_; _⑆-cong_)
+open import PiWarePrefixes.Simulation.Properties Gt using (_⟫-cong_; _∥-cong_)
 open import PiWare.Synthesizable At using (untag)
 
 open Atomic At using (W)
@@ -31,11 +31,8 @@ data Cxt' {csₓ : IsComb} (iₓ oₓ : ℕ) : {cs : IsComb} → ℕ → ℕ →
     _●⟫-cxt_ : ∀ {cs i m o} → Cxt' {csₓ} iₓ oₓ {cs} i m → ℂ {cs} m o → Cxt' {csₓ} iₓ oₓ {cs} i o
     _∥●-cxt_ : ∀ {cs i o j p} → ℂ {cs} i o → Cxt' {csₓ} iₓ oₓ {cs} j p → Cxt' {csₓ} iₓ oₓ {cs} (i + j) (o + p)
     _●∥-cxt_ : ∀ {cs i o j p} → Cxt' {csₓ} iₓ oₓ {cs} i o → ℂ {cs} j p → Cxt' {csₓ} iₓ oₓ {cs} (i + j) (o + p)
-    _⑆●-cxt_ : ∀ {cs i j o} → ℂ {cs} i o → Cxt' {csₓ} iₓ oₓ {cs} j o → Cxt' {csₓ} iₓ oₓ {cs} (suc (i ⊔ j)) o
-    _●⑆-cxt_ : ∀ {cs i j o} → Cxt' {csₓ} iₓ oₓ {cs} i o → ℂ {cs} j o → Cxt' {csₓ} iₓ oₓ {cs} (suc (i ⊔ j)) o
 
 infixr 5 _∥●-cxt_  _●∥-cxt_
-infixr 5 _⑆●-cxt_ _●⑆-cxt_
 infixl 4 _⟫●-cxt_  _●⟫-cxt_
 
 plugCxt' : ∀ {csₓ iₓ oₓ cs i o} → Cxt' {csₓ} iₓ oₓ {cs} i o → ℂ {csₓ} iₓ oₓ → ℂ {cs} i o
@@ -45,8 +42,6 @@ plugCxt' (x    ⟫●-cxt cxt)   cₓ = x ⟫ (plugCxt' cxt cₓ)
 plugCxt' (cxt ●⟫-cxt    x)   cₓ = (plugCxt' cxt cₓ) ⟫ x
 plugCxt' (x    ∥●-cxt cxt)   cₓ = x ∥ (plugCxt' cxt cₓ)
 plugCxt' (cxt ●∥-cxt    x)   cₓ = (plugCxt' cxt cₓ) ∥ x
-plugCxt' (x    ⑆●-cxt cxt)  cₓ = x ⑆ (plugCxt' cxt cₓ)
-plugCxt' (cxt ●⑆-cxt    x)  cₓ = (plugCxt' cxt cₓ) ⑆ x
 
 
 -- For now, this only works with combinational circuits, because SimEq.≈⟦⟧ only
@@ -72,17 +67,8 @@ data _Cxt-≈⟦⟧_ {iₓ¹ oₓ¹ iₓ² oₓ²} :
                  ∀ {i² o² j² p²} {cxt² : Cxt' iₓ² oₓ² i² o²} {c² : ℂ j² p²} →
                  cxt¹ Cxt-≈⟦⟧ cxt² → c¹ SimEq.≈⟦⟧ c² →
                  (cxt¹ ●∥-cxt c¹) Cxt-≈⟦⟧ (cxt² ●∥-cxt c²)
-    _⑆●_ : ∀ {i¹ j¹ o¹} {c¹ : ℂ i¹ o¹} {cxt¹ : Cxt' iₓ¹ oₓ¹ j¹ o¹} →
-                  ∀ {i² j² o²} {c² : ℂ i² o²} {cxt² : Cxt' iₓ² oₓ² j² o²} →
-                  c¹ SimEq.≈⟦⟧ c² → cxt¹ Cxt-≈⟦⟧ cxt² →
-                  (c¹ ⑆●-cxt cxt¹) Cxt-≈⟦⟧ (c² ⑆●-cxt cxt²)
-    _●⑆_ : ∀ {i¹ j¹ o¹} {cxt¹ : Cxt' iₓ¹ oₓ¹ i¹ o¹} {c¹ : ℂ j¹ o¹} →
-                  ∀ {i² j² o²} {cxt² : Cxt' iₓ² oₓ² i² o²} {c² : ℂ j² o²} →
-                  cxt¹ Cxt-≈⟦⟧ cxt² → c¹ SimEq.≈⟦⟧ c² →
-                  (cxt¹ ●⑆-cxt c¹) Cxt-≈⟦⟧ (cxt² ●⑆-cxt c²)
 
 infixr 5 _∥●_  _●∥_
-infixr 5 _⑆●_ _●⑆_
 infixl 4 _⟫●_  _●⟫_
 
 -- Congruence
@@ -100,5 +86,3 @@ infixl 4 _⟫●_  _●⟫_
 ≈⟦⟧-cong (cxts ●⟫ g≈g) holes = (≈⟦⟧-cong cxts holes) ⟫-cong g≈g
 ≈⟦⟧-cong (f≈f ∥● cxts) holes = f≈f ∥-cong (≈⟦⟧-cong cxts holes)
 ≈⟦⟧-cong (cxts ●∥ g≈g) holes = (≈⟦⟧-cong cxts holes) ∥-cong g≈g
-≈⟦⟧-cong (f≈f ⑆● cxts) holes = f≈f ⑆-cong (≈⟦⟧-cong cxts holes)
-≈⟦⟧-cong (cxts ●⑆ g≈g) holes = (≈⟦⟧-cong cxts holes) ⑆-cong g≈g

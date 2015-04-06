@@ -39,7 +39,7 @@ size-++ (a ∷ as) bs = cong (suc) (cong (_+_ a) (size-++ as bs)
 
 group : ∀ {A} i {n} (as : Vec ℕ n) (xs : Vec A (size i as)) → MinGroups A i as
 group i [] [] = []
-group i (a ∷ as) = uncurry _∷_ ∘′ map× id (group i as) ∘ splitAt' (i + a)
+group i (a ∷ as) = uncurry _∷_ ∘′ map× id (group i as) ∘ splitAt′ (i + a)
 
 ungroup : ∀ {A i n} {as : Vec ℕ n} → MinGroups A i as → Vec A (size i as)
 ungroup [] = []
@@ -53,7 +53,7 @@ group-ungroup-identity {i = i} (a ∷ as) .(x ++ xs) | x , xs , refl with group-
 
 ungroup-group-identity : ∀ {A i n} (as : Vec ℕ n) (gs : MinGroups A i as) → group i as (ungroup gs) ≡ gs
 ungroup-group-identity [] [] = refl
-ungroup-group-identity {i = i} (a ∷ as) (g ∷ gs) with splitAt-++ g (ungroup gs)
+ungroup-group-identity {i = i} (a ∷ as) (g ∷ gs) with splitAt-++ _ g (ungroup gs)
                                                     | ungroup-group-identity as gs
 ... | split | rec rewrite split | rec = refl
 
@@ -146,5 +146,5 @@ module WithExtractInsert (extract-insert : ExtractInsert) where
     extract-map-++-commute : ∀ {A i m n} (as : Vec ℕ m) {bs : Vec ℕ n} →
       (f₁ : Vec A m → Vec A m) (f₂ : Vec A n → Vec A n)→
       (gs : MinGroups A (suc i) (as ++ bs)) →
-      extract-map (uncurry _++_ ∘ map× f₁ f₂ ∘ splitAt' m) gs ≡
+      extract-map (uncurry _++_ ∘ map× f₁ f₂ ∘ splitAt′ m) gs ≡
         (uncurry _++ᵍ_ ∘ map× (extract-map f₁) (extract-map f₂) ∘ splitᵍ as) gs

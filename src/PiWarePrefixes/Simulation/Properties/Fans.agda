@@ -15,9 +15,8 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
 open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; +-comm)
 open import Data.Product using (∃; _,_; ,_; proj₁; proj₂; uncurry; <_,_>) renaming (map to map×)
 open import Data.Vec using (Vec; []; _∷_; _++_; [_]; sum; replicate; _∷ʳ_) renaming (map to mapᵥ)
-open import Data.Vec.Extra using (splitAt')
 open import Function using (id; _∘_; _⟨_⟩_)
-open import PiWare.Circuit Gt using (ℂ; 𝐂; σ; Nil; Gate; Plug; _⟫_; _∥_)
+open import PiWare.Circuit Gt using (ℂ; 𝐂; σ; Gate; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups using (size)
 open import PiWarePrefixes.Patterns.Fan using (fan; fan-spec)
@@ -53,8 +52,7 @@ private
   _⊕_ = _+m_
 
 fan-to-spec : ∀ n (w : W n) → ⟦ fan n ⟧ w ≡ fan-spec w
-fan-to-spec zero [] = P.refl
-fan-to-spec (suc n) w = {!!}
+fan-to-spec n w = {!!}
 
 fan-cong : ∀ {m n} (p : m ≡ n) → fan m ≈⟦⟧ fan n
 fan-cong P.refl = refl

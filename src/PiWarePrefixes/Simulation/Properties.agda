@@ -9,18 +9,19 @@ open import Data.Nat.Properties.Simple using (+-right-identity; +-assoc)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂; [_,_]′)
 open import Data.Vec using (Vec; tabulate; lookup; splitAt; _++_; []; _∷_) renaming (applicative to vec-applicative)
-open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin)
-open import Function using (id; _$_; _∘_; flip)
-open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_; _⑆_)
+open import Data.Vec.Extra using (splitAt-++; ++-assoc)
+open import Data.Vec.Properties using (tabulate-allFin; lookup∘tabulate; map-lookup-allFin; tabulate∘lookup)
+open import Function using (id; _$_; _∘_; _⟨_⟩_; flip)
+open import PiWare.Circuit Gt using (ℂ; σ; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Patterns.Stretch Gt using (_⤚_; _⤙_)
-open import PiWarePrefixes.Permutation as P using (Perm; _§_; _*)
 open import PiWare.Plugs Gt using (id⤨)
+open import PiWare.Plugs.Core using (_⤪_)
 open import PiWarePrefixes.Plugs.Core Gt using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
 open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
-open import Relation.Binary.PropositionalEquality as PropEq using (refl; cong; sym; _≡_; trans)
+open import Relation.Binary.PropositionalEquality as P using (refl; cong; sym; _≡_; trans)
 
 open Atomic At using (W)
 open Morphism using (op; op-<$>)
@@ -28,7 +29,7 @@ open Morphism using (op; op-<$>)
 private
   import Data.Vec.Equality
   module VE = Data.Vec.Equality.PropositionalEquality
-  module VecPropEq {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (PropEq.setoid A)
+  module VecPropEq {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (P.setoid A)
   open VecPropEq using (xs++[]=xs)
 
 
@@ -36,9 +37,20 @@ private
 -- Plugs
 
 id⤨-id : ∀ {i} (w : W i) → ⟦ id⤨ ⟧ w ≡ w
-id⤨-id w rewrite tabulate-allFin (λ fin → lookup fin w) = map-lookup-allFin w
+id⤨-id w =
+  begin
+    ⟦ id⤨ ⟧ w
+  ≡⟨⟩  -- by definition of ⟦_⟧
+    tabulate (flip lookup w ∘ flip lookup (tabulate id))
+  ≡⟨ tabulate-extensionality (cong (flip lookup w) ∘ lookup∘tabulate id) ⟩
+    tabulate (flip lookup w)
+  ≡⟨ tabulate∘lookup w ⟩
+    id w
+  ∎
+  where open P.≡-Reasoning
 
-plug-∘ : ∀ {i j o} (f : Fin j → Fin i) (g : Fin o → Fin j) → Plug f ⟫ Plug g ≈⟦⟧ Plug (f ∘ g)
+{-
+plug-∘ : ∀ {i j o} (f :  i ⤪ j) (g : j ⤪ o) → Plug f ⟫ Plug g ≈⟦⟧ Plug (f ∘ g)
 plug-∘ f g = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
   tabulate-extensionality (λ fin → lookup∘tabulate (λ fin₁ → lookup (f fin₁) w) (g fin))
 
@@ -48,29 +60,29 @@ plug-extensionality p = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
 
 pid-plugs : ∀ {i o} {f : Fin o → Fin i} {g : Fin i → Fin o} → (∀ x → f (g x) ≡ x) → Plug f ⟫ Plug g ≈⟦⟧ id⤨ {i}
 pid-plugs {f = f} {g} p = ≈⟦⟧-trans (plug-∘ f g) (plug-extensionality p)
+-}
 
 plug-id-M : ∀ {i} (M : Morphism (vec-functor i) (vec-functor i)) →
               (∀ {X : Set} (w : Vec X i) → op M w ≡ w)→
               plug-FM M ≈⟦⟧ id⤨ {i}
-plug-id-M M p = easy-≈⟦⟧ $ λ w → VE.from-≡ (trans (trans (plug-FM-⟦⟧ M w) (p w)) (sym (id⤨-id w)))
+plug-id-M M p = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w → plug-FM-⟦⟧ M w ⟨ trans ⟩ p w ⟨ trans ⟩ sym (id⤨-id w)
 
-plug-FM-∘ : ∀ {i j o} (M₁ : Morphism (vec-functor i) (vec-functor j)) (M₂ : Morphism (vec-functor j) (vec-functor o)) →
-                     plug-FM M₁ ⟫ plug-FM M₂ ≈⟦⟧ plug-FM (FM-∘ M₂ M₁)
-plug-FM-∘ {i} M₁ M₂ = easy-≈⟦⟧ (VE.from-≡ ∘ helper)
-  where
-  helper : (w : W i) → ⟦ plug-FM M₁ ⟫ plug-FM M₂ ⟧ w ≡
-                       ⟦ plug-FM (FM-∘ M₂ M₁) ⟧ w
-  helper w rewrite plug-FM-⟦⟧ (FM-∘ M₂ M₁) w
-                 | plug-FM-⟦⟧ M₁ w
-                 | plug-FM-⟦⟧ M₂ (op M₁ w) = refl
+plug-FM-∘ : ∀ {i j o} (M₁ : Morphism (vec-functor i) (vec-functor j))
+                      (M₂ : Morphism (vec-functor j) (vec-functor o)) →
+            plug-FM M₁ ⟫ plug-FM M₂ ≈⟦⟧ plug-FM (FM-∘ M₂ M₁)
+plug-FM-∘ {i} M₁ M₂ = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
+  plug-FM-⟦⟧ M₂ (⟦ plug-FM M₁ ⟧ w) ⟨ trans ⟩ cong (op M₂) (plug-FM-⟦⟧ M₁ w) ⟨ trans ⟩ sym (plug-FM-⟦⟧ (FM-∘ M₂ M₁) w)
 
-plug-FM-extensionality : ∀ {i o} {M₁ : Morphism (vec-functor i) (vec-functor o)} {M₂ : Morphism (vec-functor i) (vec-functor o)} →
+plug-FM-extensionality : ∀ {i o} {M₁ : Morphism (vec-functor i) (vec-functor o)}
+                                 {M₂ : Morphism (vec-functor i) (vec-functor o)} →
                         (∀ {X : Set} (w : Vec X i) → op M₁ w ≡ op M₂ w) → plug-FM M₁ ≈⟦⟧ plug-FM M₂
-plug-FM-extensionality p = plug-extensionality (λ x → cong (lookup x) (p _))
+plug-FM-extensionality {M₁ = M₁} {M₂} p = easy-≈⟦⟧ $ VE.from-≡ ∘ λ w →
+  plug-FM-⟦⟧ M₁ w ⟨ trans ⟩ p w ⟨ trans ⟩ sym (plug-FM-⟦⟧ M₂ w)
 
-pid-plugs-M : ∀ {i o} (M₁ : Morphism (vec-functor i) (vec-functor o)) (M₂ : Morphism (vec-functor o) (vec-functor i)) →
+pid-plugs-M : ∀ {i o} (M₁ : Morphism (vec-functor i) (vec-functor o))
+                      (M₂ : Morphism (vec-functor o) (vec-functor i)) →
               (∀ {X : Set} (w : Vec X i) → op M₂ (op M₁ w) ≡ w) → plug-FM M₁ ⟫ plug-FM M₂ ≈⟦⟧ id⤨ {i}
-pid-plugs-M M₁ M₂ p = ≈⟦⟧-trans (plug-FM-∘ M₁ M₂) (plug-id-M (FM-∘ M₂ M₁) p)
+pid-plugs-M M₁ M₂ p = plug-FM-∘ M₁ M₂ ⟨ ≈⟦⟧-trans ⟩ plug-id-M (FM-∘ M₂ M₁) p
 
 
 ----------------------------------------------------
@@ -185,21 +197,5 @@ _∥-cong_ : ∀ {i¹ o¹ j¹ p¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ p¹} →
 ⟫-∥-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ ∘ imp)
   where
   imp : ∀ w → ⟦ f₁ ∥ f₂ ⟫ g₁ ∥ g₂ ⟧ w ≡ ⟦ (f₁ ⟫ g₁) ∥ (f₂ ⟫ g₂) ⟧ w
-  imp w rewrite splitAt-++ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
+  imp w rewrite splitAt-++ _ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
 -- seq-par-distrib can be generalized to arbitrary width and height..
-
-
-----------------------------------------------------
--- ⑆
-
-infixr 5 _⑆-cong_
-_⑆-cong_ : ∀ {i¹ j¹ o¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ o¹} →
-         ∀ {i² j² o²} {c² : ℂ i² o²} {d² : ℂ j² o²} →
-         (c≈c : c¹ SimEq.≈⟦⟧ c²) →  (d≈d : d¹ SimEq.≈⟦⟧ d²) →
-         c¹ ⑆ d¹ SimEq.≈⟦⟧ c² ⑆ d²
-_⑆-cong_ {i¹} (Mk≈⟦⟧ refl c≈c) (Mk≈⟦⟧ refl d≈d) = easy-≈⟦⟧ helper
-  where
-  helper : ∀ w → [ _ , _ ]′ (untag {i¹} w) VE.≈ [ _ , _ ]′ (untag {i¹} w)
-  helper w with untag {i¹} w
-  helper w | inj₁ x = c≈c (VE.refl x)
-  helper w | inj₂ y = d≈d (VE.refl y)

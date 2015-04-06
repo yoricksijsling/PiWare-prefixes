@@ -15,7 +15,7 @@ open import Data.Vec.Properties as VecProps
 open import Function using (id; _$_; flip; const; _∘_; _∘′_)
 open import Relation.Binary.PropositionalEquality
 
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Nil; Plug; _⟫_; _∥_)
+open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.MinGroups as MinGroups
 open import PiWare.Patterns Gt using (parsN)
 open import PiWare.Plugs Gt using (id⤨)
@@ -53,7 +53,7 @@ module WithDirection (extract-insert : ExtractInsert) where
   
   out-table : ∀ {A : Set} {n} (as : Vec ℕ n) →
                Vec A (n + size 0 as) → Vec A (size 1 as)
-  out-table {n = n} as = ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt' n
+  out-table {n = n} as = ungroup ∘ uncurry insert ∘ map× id (group 0 as) ∘ splitAt′ n
 
   out-FM : ∀ {n} (as : Vec ℕ n) → Morphism (vec-functor (n + size 0 as)) (vec-functor (size 1 as))
   out-FM as = record { op = out-table as ; op-<$> = out-<$> as }
@@ -187,20 +187,20 @@ _⤜_ cs f = par-stretching cs ⟫ mapᵥ proj₁ cs ⤚ f
 --   splitAt-morphism : ∀ {f m n} → Morphism {f = f} (vec-applicative {_} {m + n})
 --                                           (×-applicative (vec-applicative {_} {m}) (vec-applicative {_} {n}))
 --   splitAt-morphism {f} {m} {n} = record
---     { op = splitAt' m
+--     { op = splitAt′ m
 --     ; op-pure = splitAt-pure
 --     ; op-⊛ = splitAt-⊛
 --     }
 --     where
---     splitAt-pure : {X : Set f} (x : X) → splitAt' m (replicate x) ≡ replicate x , replicate x
+--     splitAt-pure : {X : Set f} (x : X) → splitAt′ m (replicate x) ≡ replicate x , replicate x
 --     splitAt-pure x = cong₂ _,_ p₁ p₂
 --       where
---       p₁ : proj₁ (splitAt' m (replicate {n = m + n} x)) ≡ replicate {n = m} x
+--       p₁ : proj₁ (splitAt′ m (replicate {n = m + n} x)) ≡ replicate {n = m} x
 --       p₁ rewrite sym (++-pure m {n} x) = splitAt-proj₁ (replicate x) (replicate x)
---       p₂ : proj₂ (splitAt' m (replicate {n = m + n} x)) ≡ replicate {n = n} x
+--       p₂ : proj₂ (splitAt′ m (replicate {n = m + n} x)) ≡ replicate {n = n} x
 --       p₂ rewrite sym (++-pure m {n} x) = splitAt-proj₂ (replicate {n = m} x) (replicate x)
 --     splitAt-⊛ : {X Y : Set f} (fs : Vec (X → Y) (m + n)) (xs : Vec X (m + n)) →
---                 splitAt' m (fs ⊛ xs) ≡ zip× _⊛_ _⊛_ (splitAt' m fs) (splitAt' m xs)
+--                 splitAt′ m (fs ⊛ xs) ≡ zip× _⊛_ _⊛_ (splitAt′ m fs) (splitAt′ m xs)
 --     splitAt-⊛ fs xs with splitAt m fs | splitAt m xs
 --     ... | f₁  , f₂  , fp | x₁  , x₂  , xp rewrite fp | xp
 --                                                 | sym (++-⊛ f₁ f₂ x₁ x₂)
@@ -228,7 +228,7 @@ _⤜_ cs f = par-stretching cs ⟫ mapᵥ proj₁ cs ⤚ f
 --     group-⊛ i [] [] [] = refl
 --     group-⊛ i (a ∷ as) fs xs with op-⊛ (splitAt-morphism {m = i + a} {size i as}) fs xs
 --     ... | sa-⊛ rewrite cong proj₁ sa-⊛ | cong proj₂ sa-⊛
---       = cong (_∷_ _) (group-⊛ i as (proj₂ (splitAt' (i + a) fs)) (proj₂ (splitAt' (i + a) xs)))
+--       = cong (_∷_ _) (group-⊛ i as (proj₂ (splitAt′ (i + a) fs)) (proj₂ (splitAt′ (i + a) xs)))
 
 --   ungroup-morphism : ∀ {i n} {as : Vec ℕ n} → Morphism (minGroups-applicative i as)
 --                                                       (vec-applicative {_} {size i as})
