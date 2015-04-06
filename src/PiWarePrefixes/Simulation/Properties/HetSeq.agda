@@ -14,6 +14,11 @@ open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
 open Atomic At using (W)
 
+⟫[]-to-⟫ : ∀ {i m o} {f : ℂ i m} {g : ℂ m o} →
+            f ⟫[ P.refl ] g ≈⟦⟧ f ⟫ g
+⟫[]-to-⟫ = (⟫-right-identity _) ⟫-cong refl
+
+
 -- With ⟫[-cong and ⟫]-cong we can convert ⟫ to and from ⟫[]. In between we can use ⟫[]-cong
 -- for operations where we keep the ⟫[].
 -- The definitions are picked in such a way that the proofs for ⟫[] are created with the information
@@ -53,12 +58,11 @@ _⟫]-cong_ {p₁ = P.refl} f≈f g≈g = (⟫-right-identity _ ⟨ trans ⟩ f�
 
 -- Most of the laws for ⟫ also hold for ⟫[]
 ⟫[]-right-identity : ∀ {i m o} (f : ℂ i m) {p : m ≡ o} → f ⟫[ p ] id⤨ ≈⟦⟧ f
-⟫[]-right-identity f {P.refl} = ⟫-right-identity _
+⟫[]-right-identity f {P.refl} = ⟫[]-to-⟫
                       ⟨ trans ⟩ ⟫-right-identity f
 
 ⟫[]-left-identity : ∀ {i m o} {p : i ≡ m} (f : ℂ m o) → id⤨ ⟫[ p ] f ≈⟦⟧ f
-⟫[]-left-identity {p = P.refl} f = ⟫-assoc _ _ _
-                         ⟨ trans ⟩ ⟫-left-identity _
+⟫[]-left-identity {p = P.refl} f = ⟫[]-to-⟫
                          ⟨ trans ⟩ ⟫-left-identity f
 
 ⟫[]-assoc : ∀ {i j k m n o} (f : ℂ i j) {p : j ≡ k} (g : ℂ k m) {q : m ≡ n} (h : ℂ n o) →
