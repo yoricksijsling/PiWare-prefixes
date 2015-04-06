@@ -20,8 +20,9 @@ pattern Absurd# n   = Fs n
 |in| = λ { Plus# → 2; (Absurd# ()) }
 |out| _ = 1
 
-_+m_ : Fin 256 → Fin 256 → Fin 256
-i +m j = (toℕ i + toℕ j) mod 256
+abstract
+  _+m_ : Fin 256 → Fin 256 → Fin 256
+  i +m j = (toℕ i + toℕ j) mod 256
 
 postulate
   +m-assoc : ∀ m n o → (m +m n) +m o ≡ m +m (n +m o)

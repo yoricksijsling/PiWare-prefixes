@@ -11,7 +11,7 @@ open import Data.Vec hiding (zipWith) renaming (map to mapᵥ)
 open import Function using (id; _$_; _∘_; flip)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; cong₂)
 
-open import PiWare.Circuit Gt using (ℂ; 𝐂; Plug; _⟫_; _∥_)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; Plug; _⟫_; _∥_)
 open import PiWare.Interface using (Ix)
 open import PiWare.Patterns Gt using (parsN)
 open import PiWare.Plugs Gt using (id⤨)

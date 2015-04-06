@@ -14,16 +14,17 @@ Gt = Plus
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
 open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; +-comm)
 open import Data.Product using (∃; _,_; ,_; proj₁; proj₂; uncurry; <_,_>) renaming (map to map×)
-open import Data.Vec using (Vec; []; _∷_; _++_; [_]; sum; replicate; _∷ʳ_) renaming (map to mapᵥ)
+open import Data.Vec using (Vec; []; _∷_; _++_; [_]; sum; replicate; _∷ʳ_; initLast)
+                     renaming (map to mapᵥ)
 open import Function using (id; _∘_; _⟨_⟩_)
 open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; σ; Gate; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups using (size)
-open import PiWarePrefixes.Patterns.Fan using (fan; fan-spec)
+open import PiWarePrefixes.Patterns.Fan using (fan; fan′; fan-spec; fanpart-M; fanblob; fanblob-spec)
 open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} using (_⤙_; Stretching-ℂ; par-stretching; _⤛_)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
 open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym; ≈⟦⟧-trans to trans)
@@ -53,6 +54,23 @@ private
 
 fan-to-spec : ∀ n (w : W n) → ⟦ fan n ⟧ w ≡ fan-spec w
 fan-to-spec n w = {!!}
+
+open import Data.Vec
+
+fanblob-to-spec : ∀ n (w : W (suc n)) → ⟦ fanblob n ⟧ w ≡ fanblob-spec n w
+fanblob-to-spec n (x ∷ xs) with initLast (x ∷ xs)
+fanblob-to-spec n (x ∷ xs) | ys , y , p = {!!}
+
+
+fan′-to-spec : ∀ n (w : W n) → ⟦ fan′ n ⟧ w ≡ fan-spec w
+fan′-to-spec zero [] = P.refl
+fan′-to-spec (suc n) w with plug-FM-⟦⟧ (fanpart-M n) w
+... | c rewrite c = {!!}
+             ⟨ P.trans ⟩ {!!}
+
+
+
+
 
 fan-cong : ∀ {m n} (p : m ≡ n) → fan m ≈⟦⟧ fan n
 fan-cong P.refl = refl
