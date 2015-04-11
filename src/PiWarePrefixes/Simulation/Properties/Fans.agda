@@ -1,38 +1,31 @@
 module PiWarePrefixes.Simulation.Properties.Fans where
 
-open import PiWare.Atom using (Atomic; module Atomic)
-open import PiWare.Gates using (Gates)
-open import PiWarePrefixes.Atom.Int8 using (Atomic-Int8)
-open import PiWarePrefixes.Gates.Plus using (Plus; Plus#; _+m_)
+open import PiWarePrefixes.Patterns.Fan -- At, Gt and plusℂ are imported from here.
 
-At : Atomic
-At = Atomic-Int8
-
-Gt : Gates At
-Gt = Plus
-
+open import PiWare.Atom using (module Atomic)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
 open import Data.Nat.Properties.Simple using (+-suc; +-right-identity; +-comm)
-open import Data.Product using (∃; _,_; ,_; proj₁; proj₂; uncurry; <_,_>) renaming (map to map×)
+open import Data.Product using (∃; _,_; ,_; proj₁; proj₂; uncurry; uncurry′; <_,_>) renaming (map to map×)
 open import Data.Vec using (Vec; []; _∷_; _++_; [_]; sum; replicate; _∷ʳ_; initLast)
                      renaming (map to mapᵥ)
-open import Function using (id; _∘_; _⟨_⟩_)
+open import Data.Vec.Extra using (splitAt′)
+open import Function using (id; _$_; _∘_; _⟨_⟩_)
 open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; σ; Gate; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups using (size)
-open import PiWarePrefixes.Patterns.Fan using (fan; fan′; fan-spec; fanpart-M; fanblob; fanblob-spec)
 open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} using (_⤙_; Stretching-ℂ; par-stretching; _⤛_)
 open import PiWare.Plugs Gt using (id⤨)
-open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨; plug-FM-⟦⟧)
+open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨; plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
-open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
+open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym; ≈⟦⟧-trans to trans)
 open import PiWarePrefixes.Simulation.Properties Gt
 open import PiWarePrefixes.Simulation.Properties.HetSeq Gt
 open import PiWarePrefixes.Simulation.Properties.Stretching Gt
 open import PiWarePrefixes.Simulation.Properties.Stretching.Derived Gt
-open import PiWarePrefixes.Utils using (map-replicate; ++-∷ʳ)
+open import PiWarePrefixes.Utils using ( initLast′; drop-initLast′; map-cong; map-replicate; ++-∷ʳ
+                                       ; module Morphism; splitAt′-++)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; cong; cong₂)
 
 private
@@ -42,47 +35,98 @@ private
   open VE using ([]-cong; _∷-cong_)
   module VES = Data.Vec.Equality.Indexed.Equality (reindexed-≈⟦⟧-setoid (< suc , suc >))
   open VES using ([]-cong; _∷-cong_)
+  import Data.Vec.Properties
+  module PVE {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (P.setoid A)
+
 
 open Atomic At using (Atom; W)
+open Morphism using (op; op-<$>)
+
+fan-plus-to-spec : ∀ n (w : W (suc n)) → ⟦ fan-plus n ⟧ w ≡ fan-plus-spec n w
+fan-plus-to-spec n (x ∷ xs) = begin
+  ⟦ fan-plus n ⟧ (x ∷ xs)
+    ≡⟨⟩
+  (⟦ id⤨ {n} ∥ plusℂ ⟧ ∘ ⟦ plug-FM (fan-plus-prepare-M n) ⟧) (x ∷ xs)
+    ≡⟨ cong ⟦ id⤨ {n} ∥ plusℂ ⟧ (plug-FM-⟦⟧ (fan-plus-prepare-M n) (x ∷ xs)) ⟩
+  (⟦ id⤨ {n} ∥ plusℂ ⟧ ∘ op (fan-plus-prepare-M n)) (x ∷ xs)
+    ≡⟨⟩
+  (uncurry′ _++_ ∘ map× ⟦ id⤨ {n} ⟧ ⟦ plusℂ ⟧ ∘ splitAt′ n ∘ op (fan-plus-prepare-M n)) (x ∷ xs)
+    ≡⟨ cong₂ _++_ (id⤨-id ((proj₁ ∘ splitAt′ n ∘ op (fan-plus-prepare-M n)) (x ∷ xs))) P.refl ⟩
+  (uncurry′ _++_ ∘ map× id ⟦ plusℂ ⟧ ∘ splitAt′ n ∘ op (fan-plus-prepare-M n)) (x ∷ xs)
+    ≡⟨⟩
+  (uncurry′ _++_ ∘ map× id ⟦ plusℂ ⟧ ∘ splitAt′ n ∘ uncurry′ _++_ ∘ map× id (λ y → x ∷ y ∷ []) ∘ initLast′) (x ∷ xs)
+    ≡⟨ cong (uncurry′ _++_ ∘ map× id ⟦ plusℂ ⟧) (splitAt′-++ (proj₁ (initLast′ (x ∷ xs))) _) ⟩
+  (uncurry′ _++_ ∘ map× id ⟦ plusℂ ⟧ ∘ map× id (λ y → x ∷ y ∷ []) ∘ initLast′) (x ∷ xs)
+    ≡⟨ cong (_++_ (proj₁ (initLast′ (x ∷ xs)))) (singleton-⊕ x (proj₂ (initLast′ (x ∷ xs)))) ⟩
+  (uncurry′ _++_ ∘ map× id (λ y → [ x ⊕ y ]) ∘ initLast′) (x ∷ xs)
+    ∎
+  where
+  open P.≡-Reasoning
+  singleton-⊕ : ∀ x y → ⟦ plusℂ ⟧ (x ∷ y ∷ []) ≡ [ x ⊕ y ]
+  singleton-⊕ x y with ⟦ plusℂ ⟧ (x ∷ y ∷ [])
+  singleton-⊕ x y | r ∷ [] = P.refl
 
 private
-  plusℂ : 𝐂 2 1
-  plusℂ = Gate Plus#
+  fan-spec-combine : ∀ {n} x (xs : W (suc n)) →
+         fan-spec (x ∷ proj₁ (initLast′ xs)) ++ [ x ⊕ (proj₂ (initLast′ xs)) ] VE.≈ fan-spec (x ∷ xs)
+  fan-spec-combine x xs = P.refl ∷-cong helper (_⊕_ x) xs
+    where
+    helper : ∀ {A B : Set} {n} (f : A → B) (xs : Vec A (suc n)) → mapᵥ f (proj₁ (initLast′ xs)) ++ [ f (proj₂ (initLast′ xs)) ] VE.≈ mapᵥ f xs
+    helper {n = zero} f (x ∷ []) = VE.refl (f x ∷ [])
+    helper {n = suc n} f (x ∷ xs) with initLast xs
+    helper {A} {B} {suc n} f (x ∷ .(ys ∷ʳ y)) | ys , y , P.refl = P.refl ∷-cong
+        (VE.sym (PVE.map-++-commute f ys {[ y ]}) ⟨ VE.trans ⟩ map-cong f (VE.sym (++-∷ʳ ys y)))
 
-  _⊕_ : Atom → Atom → Atom
-  _⊕_ = _+m_
+mutual
+  fan′-to-spec : ∀ n (w : W n) → ⟦ fan′ n ⟧ w VE.≈ fan-spec w
+  fan′-to-spec 0 [] = VE.refl []
+  fan′-to-spec 1 (x ∷ []) = VE.refl [ x ]
+  fan′-to-spec (suc (suc n)) (x ∷ xs) = VE.from-≡ (fan′-to-part-of-spec (fan-to-spec (suc n))) ⟨ VE.trans ⟩ fan-spec-combine x xs
+    where
+    open P.≡-Reasoning
+    fa : W⟶W (suc n + 1) (suc n + 1)
+    fa = ⟦ fan (suc n) ∥ id⤨ ⟧
 
-fan-to-spec : ∀ n (w : W n) → ⟦ fan n ⟧ w ≡ fan-spec w
-fan-to-spec n w = {!!}
+    fan′-to-part-of-spec : ((w : W (suc n)) → ⟦ fan (suc n) ⟧ w ≡ fan-spec w) →
+      ⟦ fan′ (2 + n) ⟧ (x ∷ xs) ≡ fan-spec (x ∷ proj₁ (initLast′ xs)) ++ [ x ⊕ proj₂ (initLast′ xs) ]
+    fan′-to-part-of-spec rec = begin
+      ⟦ fan-plus (suc n) ⟫ fan (suc n) ∥ id⤨ {1} ⟧ (x ∷ xs)
+        ≡⟨⟩
+      (fa ∘ ⟦ fan-plus (suc n) ⟧) (x ∷ xs)
+        ≡⟨ cong fa (fan-plus-to-spec (suc n) (x ∷ xs)) ⟩
+      (fa ∘ uncurry′ _++_ ∘ map× id (λ y → [ x ⊕ y ]) ∘ initLast′) (x ∷ xs)
+        ≡⟨ cong (fa ∘ uncurry′ _++_ ∘ map× id (λ y → [ x ⊕ y ])) (drop-initLast′ x xs) ⟩
+      (fa ∘ uncurry′ _++_ ∘ map× (_∷_ x) (λ y → [ x ⊕ y ]) ∘ initLast′) xs
+       ≡⟨⟩
+      (uncurry′ _++_ ∘ map× ⟦ fan (suc n) ⟧ ⟦ id⤨ ⟧ ∘ splitAt′ (suc n) ∘
+       uncurry′ _++_ ∘ map× (_∷_ x) (λ y → [ x ⊕ y ]) ∘ initLast′) xs
+        ≡⟨ cong (uncurry′ _++_ ∘ map× ⟦ fan (suc n) ⟧ ⟦ id⤨ ⟧)
+                (splitAt′-++ (x ∷ (proj₁ (initLast′ xs))) _) ⟩
+      (uncurry′ _++_ ∘ map× (⟦ fan (suc n) ⟧ ∘ _∷_ x)
+                            (⟦ id⤨ ⟧ ∘ (λ y → [ x ⊕ y ])) ∘ initLast′) xs
+        ≡⟨ cong₂ _++_ (rec (x ∷ proj₁ (initLast′ xs)))
+                      (id⤨-id [ x ⊕ proj₂ (initLast′ xs) ]) ⟩
+      (uncurry′ _++_ ∘ map× (fan-spec {suc n} ∘ _∷_ x)
+                            (λ y → [ x ⊕ y ]) ∘ initLast′) xs
+        ≡⟨⟩
+      fan-spec (x ∷ proj₁ (initLast′ xs)) ++ [ x ⊕ proj₂ (initLast′ xs) ]
+        ∎
 
-open import Data.Vec
-
-fanblob-to-spec : ∀ n (w : W (suc n)) → ⟦ fanblob n ⟧ w ≡ fanblob-spec n w
-fanblob-to-spec n (x ∷ xs) with initLast (x ∷ xs)
-fanblob-to-spec n (x ∷ xs) | ys , y , p = {!!}
-
-
-fan′-to-spec : ∀ n (w : W n) → ⟦ fan′ n ⟧ w ≡ fan-spec w
-fan′-to-spec zero [] = P.refl
-fan′-to-spec (suc n) w with plug-FM-⟦⟧ (fanpart-M n) w
-... | c rewrite c = {!!}
-             ⟨ P.trans ⟩ {!!}
-
-
-
+  fan-to-spec : ∀ n (w : W n) → ⟦ fan n ⟧ w ≡ fan-spec w
+  fan-to-spec n w with ⟫[]-right-identity (fan′ n) {swapℕ-id n}
+  fan-to-spec n w | Mk≈⟦⟧ pi fan≈fan′ = VE.to-≡ (fan≈fan′ (VE.refl w) ⟨ VE.trans ⟩ fan′-to-spec n w)
 
 
 fan-cong : ∀ {m n} (p : m ≡ n) → fan m ≈⟦⟧ fan n
 fan-cong P.refl = refl
 
-fan-law-1 : ∀ {n m} (f : Stretching-ℂ) (fs : Vec Stretching-ℂ m) (gs : Vec Stretching-ℂ n) →
-            (fan (suc n)) ⤛ ((, fan (suc m) ⤛ (f ∷ fs)) ∷ gs) ≈⟦⟧ fan (suc m + n) ⤛ ((f ∷ fs) ++ gs)
-fan-law-1 {n} {m} f fs gs = Mk≈⟦⟧ pi helper
-  where
-  pi : size 1 (mapᵥ proj₁ (f ∷ fs)) + size 1 (mapᵥ proj₁ gs) ≡ size 1 (mapᵥ proj₁ (f ∷ fs ++ gs))
-  pi = {!!}
-  helper : (fan (suc n)) ⤛ ((, fan (suc m) ⤛ (f ∷ fs)) ∷ gs) ≈e fan (suc m + n) ⤛ ((f ∷ fs) ++ gs)
-  helper {w₁} {w₂} w≈w = {!!}
+postulate
+  fan-law-1 : ∀ {n m} (f : Stretching-ℂ) (fs : Vec Stretching-ℂ m) (gs : Vec Stretching-ℂ n) →
+              (fan (suc n)) ⤛ ((, fan (suc m) ⤛ (f ∷ fs)) ∷ gs) ≈⟦⟧ fan (suc m + n) ⤛ ((f ∷ fs) ++ gs)
+-- fan-law-1 {n} {m} f fs gs = Mk≈⟦⟧ pi helper
+--   where
+--     pi : size 1 (mapᵥ proj₁ (f ∷ fs)) + size 1 (mapᵥ proj₁ gs) ≡ size 1 (mapᵥ proj₁ (f ∷ fs ++ gs))
+--     helper : (fan (suc n)) ⤛ ((, fan (suc m) ⤛ (f ∷ fs)) ∷ gs) ≈e fan (suc m + n) ⤛ ((f ∷ fs) ++ gs)
 
 fans : ∀ {n p} (xs : Vec ℕ n) → Vec (Stretching-ℂ {p}) n
 fans = mapᵥ (λ x → x , fan (suc x))
@@ -153,8 +197,6 @@ binary-fan-law m n = begin
     ∎
   where
   open SimEq.≈⟦⟧-Reasoning
-  import Data.Vec.Properties
-  module PVE {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (P.setoid A)
 
   ids : ∀ {n} → Vec (Stretching-ℂ {σ}) n
   ids {_} = replicate (, id⤨ {1})

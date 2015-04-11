@@ -1,7 +1,7 @@
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
-module PiWarePrefixes.Simulation.Equality.Core {At : Atomic} (Gt : Gates At) where
+module PiWarePrefixes.Simulation.Equality.Core {At : Atomic} {Gt : Gates At} where
 
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; uncurry)

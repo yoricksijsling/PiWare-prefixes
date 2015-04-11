@@ -15,7 +15,7 @@ open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} as Stretch
   using (_⤚_; ⤚-direction; _⤙_; ⤙-direction; _⤛_; _⤜_; Stretching-ℂ; par-stretching)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
-open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
+open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym)
 open import PiWarePrefixes.Simulation.Properties Gt
 open import PiWarePrefixes.Simulation.Properties.HetSeq Gt

@@ -18,7 +18,7 @@ open import PiWare.Plugs Gt using (id⤨)
 open import PiWare.Plugs.Core using (_⤪_)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧)
-open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
+open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
 open import PiWare.Synthesizable At
 open import PiWarePrefixes.Utils
 open import Relation.Binary.PropositionalEquality as P using (refl; cong; sym; _≡_; trans)

@@ -2,9 +2,10 @@ module PiWarePrefixes.Utils where
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc)
-open import Data.Product using (_,_; proj₁; proj₂; _×_) renaming (map to map×)
-open import Data.Vec using (Vec; _++_; []; _∷_; [_]; splitAt; tabulate; _∷ʳ_; replicate; _⊛_)
+open import Data.Product using (_,_; proj₁; proj₂; _×_; uncurry′) renaming (map to map×)
+open import Data.Vec using (Vec; _++_; []; _∷_; [_]; splitAt; tabulate; _∷ʳ_; replicate; _⊛_; initLast)
                      renaming (map to mapᵥ)
+open import Data.Vec.Extra using (splitAt′; splitAt-++)
 open import Data.Vec.Properties using (∷-injective)
 open import Function using (id; _∘_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
@@ -23,10 +24,25 @@ split-++ : ∀ {a} {A : Set a} {n m} (ys ys' : Vec A n) (zs zs' : Vec A m)
       (p : ys ++ zs ≡ ys' ++ zs') → ys ≡ ys' × zs ≡ zs'
 split-++ ys ys' zs zs' p = map× to-≡ to-≡ (split-++' ys ys' zs zs' (from-≡ p))
 
+splitAt′-++ : ∀ {A : Set} {m n} (xs : Vec A m) (ys : Vec A n) → (splitAt′ m ∘ uncurry′ _++_) (xs , ys) ≡ (xs , ys)
+splitAt′-++ xs ys rewrite splitAt-++ _ xs ys = refl
+
 tabulate-extensionality : ∀ {n} {r : Set} {f g : Fin n → r} →
   (∀ x → f x ≡ g x) → tabulate f ≡ tabulate g
 tabulate-extensionality {zero} p = refl
 tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p ∘ suc)) = refl
+
+
+--------------------------------------------------------------------------------
+-- Properties regarding initLast
+
+initLast′ : ∀ {a n} {A : Set a} (xs : Vec A (suc n)) → Vec A n × A
+initLast′ xs = map× id proj₁ (initLast xs)
+
+drop-initLast′ : ∀ {A : Set} {n} (x : A) (xs : Vec A (suc n)) →
+                 initLast′ (x ∷ xs) ≡ map× (_∷_ x) id (initLast′ xs)
+drop-initLast′ _ xs with initLast xs
+drop-initLast′ _ .(ys ∷ʳ y) | ys , y , refl = refl
 
 ∷ʳ-injective : ∀ {a n} {A : Set a} {x y : A} (xs ys : Vec A n) →
                (xs ∷ʳ x) ≡ (ys ∷ʳ y) → xs ≡ ys × x ≡ y
@@ -38,6 +54,14 @@ tabulate-extensionality {suc n} p rewrite p zero | (tabulate-extensionality (p �
         xs ∷ʳ x VE.≈ xs ++ (x ∷ [])
 ++-∷ʳ [] x = VE.refl [ x ]
 ++-∷ʳ (y ∷ ys) x = refl ∷-cong (++-∷ʳ ys x)
+
+--------------------------------------------------------------------------------
+-- Properties of maps
+
+map-cong : ∀ {A B : Set} {m n} (f : A → B) {xs : Vec A m} {ys : Vec A n} →
+           xs VE.≈ ys → mapᵥ f xs VE.≈ mapᵥ f ys
+map-cong f []-cong = []-cong
+map-cong f (refl ∷-cong xs≈ys) = refl ∷-cong (map-cong f xs≈ys)
 
 map-replicate : ∀ {n} {A B : Set} (f : A → B) (x : A) → mapᵥ f (replicate {n = n} x) ≡ replicate (f x)
 map-replicate {zero} f x = refl

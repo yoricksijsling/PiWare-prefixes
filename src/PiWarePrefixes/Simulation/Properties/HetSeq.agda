@@ -3,12 +3,13 @@ open import PiWare.Gates using (Gates)
 
 module PiWarePrefixes.Simulation.Properties.HetSeq {At : Atomic} (Gt : Gates At) where
 
-open import Function using (_⟨_⟩_)
-open import PiWare.Circuit {Gt = Gt} using (ℂ; _⟫_; _∥_)
+open import Function using (_∘_; _⟨_⟩_)
+open import PiWare.Circuit {Gt = Gt} using (ℂ; _⟫_; _∥_; σ)
 open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWare.Plugs Gt using (id⤨)
+open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Properties Gt
-open import PiWarePrefixes.Simulation.Equality.Core Gt as SimEq
+open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym; ≈⟦⟧-trans to trans)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
@@ -17,6 +18,10 @@ open Atomic At using (W)
 ⟫[]-to-⟫ : ∀ {i m o} {f : ℂ i m} {g : ℂ m o} →
             f ⟫[ P.refl ] g ≈⟦⟧ f ⟫ g
 ⟫[]-to-⟫ = (⟫-right-identity _) ⟫-cong refl
+
+⟫[]-to-spec : ∀ {i m n o} (f : ℂ i m) (p : m ≡ n) (g : ℂ {σ} n o) →
+              ∀ w → ⟦ f ⟫[ p ] g ⟧ w ≡ ⟫[]-spec f p g w
+⟫[]-to-spec f P.refl g w = P.cong ⟦ g ⟧ (id⤨-id (⟦ f ⟧ w))
 
 
 -- With ⟫[-cong and ⟫]-cong we can convert ⟫ to and from ⟫[]. In between we can use ⟫[]-cong
