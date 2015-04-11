@@ -1,15 +1,8 @@
-module PiWarePrefixes.Patterns.Fan where
-
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
-open import PiWarePrefixes.Atom.Int8 using (Atomic-Int8)
-open import PiWarePrefixes.Gates.Plus using (Plus; Plus#; _+m_)
+open import PiWarePrefixes.Circuit.Monoid using (Plusℂ)
 
-abstract -- Should not be expanded by agda, so we can easily convert them to module parameters.
-  At : Atomic
-  At = Atomic-Int8
-  Gt : Gates At
-  Gt = Plus
+module PiWarePrefixes.Patterns.Fan {At : Atomic} {Gt : Gates At} {plusℂ : Plusℂ {Gt = Gt}} where
 
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-comm)
@@ -27,10 +20,6 @@ open import PiWarePrefixes.Utils using (initLast′; Morphism; vec-functor)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
 open Atomic At using (Atom; W)
-
-abstract -- Should not be expanded by agda, so we can easily convert it to a module parameter.
-  plusℂ : 𝐂 2 1
-  plusℂ = Gate Plus#
 
 _⊕_ : Atom → Atom → Atom
 x ⊕ y = head (⟦ plusℂ ⟧ (x ∷ y ∷ []))

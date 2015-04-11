@@ -1,6 +1,11 @@
-module PiWarePrefixes.Simulation.Properties.Fans where
+open import PiWare.Atom using (Atomic; module Atomic)
+open import PiWare.Gates using (Gates)
+open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
 
-open import PiWarePrefixes.Patterns.Fan -- At, Gt and plusℂ are imported from here.
+module PiWarePrefixes.Simulation.Properties.Fans {At : Atomic} {Gt : Gates At} {ℂ-monoid : ℂ-Monoid {Gt = Gt}} where
+
+open Atomic At using (Atom; W)
+open ℂ-Monoid ℂ-monoid using (plusℂ; plusℂ-assoc)
 
 open import PiWare.Atom using (module Atomic)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
@@ -13,6 +18,7 @@ open import Function using (id; _$_; _∘_; _⟨_⟩_)
 open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; σ; Gate; Plug; _⟫_; _∥_)
 open import PiWarePrefixes.Circuit.Context.Core Gt
 open import PiWarePrefixes.MinGroups using (size)
+open import PiWarePrefixes.Patterns.Fan {plusℂ = plusℂ}
 open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWarePrefixes.Patterns.Stretch {Gt = Gt} using (_⤙_; Stretching-ℂ; par-stretching; _⤛_)
 open import PiWare.Plugs Gt using (id⤨)
@@ -39,7 +45,6 @@ private
   module PVE {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (P.setoid A)
 
 
-open Atomic At using (Atom; W)
 open Morphism using (op; op-<$>)
 
 fan-plus-to-spec : ∀ n (w : W (suc n)) → ⟦ fan-plus n ⟧ w ≡ fan-plus-spec n w
@@ -132,6 +137,7 @@ fans : ∀ {n p} (xs : Vec ℕ n) → Vec (Stretching-ℂ {p}) n
 fans = mapᵥ (λ x → x , fan (suc x))
 
 postulate
+  -- We need plusℂ-assoc for this one
   fan-law-2′ : ∀ {n} i (xs : Vec ℕ n) →
             par-stretching ((, id⤨ {suc i}) ∷ fans xs) ⟫ fan (size 1 (i ∷ mapᵥ proj₁ (fans xs)))
               ≈⟦⟧ fan (1 + n) ⤛ ((, fan (suc i)) ∷ fans xs)
