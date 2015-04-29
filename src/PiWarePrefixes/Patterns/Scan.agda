@@ -8,10 +8,12 @@ open ℂ-Monoid ℂ-monoid using (plusℂ; plusℂ-assoc)
 
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Nat.Properties.Simple using (+-suc)
+open import Data.Vec using ([]; _∷_) renaming (map to mapᵥ)
 open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; _⟫_; _∥_)
 open import PiWarePrefixes.Patterns.Fan {plusℂ = plusℂ}
 open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWare.Plugs Gt using (id⤨)
+open import PiWare.Simulation Gt using (W⟶W)
 open import Relation.Binary.PropositionalEquality as P
 
 -- ▱ \paw
@@ -31,3 +33,7 @@ _▱_ {n = n} {o} f g = f ∥ id⤨ {n} ⟫[ sym (+-suc o n) ] id⤨ {o} ∥ g
 _⌷_ : ∀ {σω m n} (f : ℂ {σω} (suc m) (suc m)) (g : ℂ {σω} n n) →
          ℂ {σω} (suc m + n) (m + suc n)
 _⌷_ {m = m} {n} f g = f ∥ g ⟫[ P.sym (+-suc m n) ] id⤨ {m} ∥ fan (suc n)
+
+scan-spec : ∀ {n} → W⟶W n n
+scan-spec [] = []
+scan-spec (x ∷ xs) = x ∷ mapᵥ (_⊕_ x) (scan-spec xs)

@@ -5,11 +5,13 @@ open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
 module PiWarePrefixes.Simulation.Properties.Scans {At : Atomic} {Gt : Gates At}
                                                   {ℂ-monoid : ℂ-Monoid {Gt = Gt}} where
 
+open Atomic At using (W)
 open ℂ-Monoid ℂ-monoid using (plusℂ; plusℂ-assoc)
 
 open import Data.Nat using (ℕ; zero; suc; _+_; pred)
 open import Data.Nat.Properties using (cancel-+-left)
 open import Data.Nat.Properties.Simple using (+-suc; +-comm; +-assoc)
+open import Data.Vec using ([]; _∷_)
 open import Function using (flip; _⟨_⟩_)
 open import PiWare.Circuit {Gt = Gt} using (ℂ; 𝐂; Plug; _⟫_; _∥_; σ)
 open import PiWarePrefixes.Patterns.Fan {plusℂ = plusℂ}
@@ -17,6 +19,7 @@ open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt}
 open import PiWarePrefixes.Patterns.Scan {ℂ-monoid = ℂ-monoid}
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
+open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym; ≈⟦⟧-trans to trans)
 open import PiWarePrefixes.Simulation.Properties {Gt = Gt}
@@ -33,6 +36,11 @@ scan-cong P.refl = refl
 scan-succ-cong : ∀ {m n} {f : ℂ m m} {g : ℂ n n} (f≈g : f ≈⟦⟧ g) →
                  scan-succ f ≈⟦⟧ scan-succ g
 scan-succ-cong f≈g = (refl ∥-cong f≈g) ⟫-cong (fan-cong (cong suc (i-equal f≈g)))
+
+scan-to-spec : ∀ n (w : W n) → ⟦ scan n ⟧ w ≡ scan-spec w
+scan-to-spec zero [] = P.refl
+scan-to-spec (suc n) (x ∷ xs) rewrite fan-to-spec (suc n) (x ∷ ⟦ scan n ⟧ xs)
+                                    | scan-to-spec n xs = P.refl
 
 scan1-id : scan 1 ≈⟦⟧ id⤨
 scan1-id = ∥-id⤨ ⟫-cong fan1-id ⟨ trans ⟩ ⟫-right-identity id⤨
