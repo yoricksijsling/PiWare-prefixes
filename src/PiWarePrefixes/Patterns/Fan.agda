@@ -16,6 +16,7 @@ open import PiWarePrefixes.Patterns.HetSeq {Gt = Gt} using (_⟫[_]_)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (plug-FM)
 open import PiWare.Plugs Gt using (id⤨)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
+open import PiWarePrefixes.Simulation.Equality.Core
 open import PiWarePrefixes.Utils using (initLast′; Morphism; vec-functor)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
@@ -52,10 +53,17 @@ mutual
   fan′ : ∀ n → 𝐂 n (swapℕ n)
   fan′ 0 = id⤨ {0}
   fan′ 1 = id⤨ {1}
-  fan′ (suc (suc n)) = fan-plus (suc n) ⟫ fan (suc n) ∥ id⤨ {1}
+  fan′ (suc (suc n)) = fan-plus (suc n) ⟫ fan-impl (suc n) ∥ id⤨ {1}
 
+  fan-impl : ∀ n → 𝐂 n n
+  fan-impl n = fan′ n ⟫[ swapℕ-id n ] id⤨
+
+abstract
   fan : ∀ n → 𝐂 n n
-  fan n = fan′ n ⟫[ swapℕ-id n ] id⤨
+  fan n = fan-impl n
+
+  reveal-fan : ∀ n → fan n ≈⟦⟧ fan-impl n
+  reveal-fan n = ≈⟦⟧-refl
 
 fan-spec : ∀ {n} → W⟶W n n
 fan-spec [] = []

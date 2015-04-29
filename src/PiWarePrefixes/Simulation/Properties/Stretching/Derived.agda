@@ -17,8 +17,8 @@ open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (rewire⤨)
 open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
   renaming (≈⟦⟧-refl to refl; ≈⟦⟧-sym to sym)
-open import PiWarePrefixes.Simulation.Properties Gt
-open import PiWarePrefixes.Simulation.Properties.HetSeq Gt
+open import PiWarePrefixes.Simulation.Properties {Gt = Gt}
+open import PiWarePrefixes.Simulation.Properties.HetSeq {Gt = Gt}
 open import PiWarePrefixes.Simulation.Properties.Stretching Gt
 open import PiWarePrefixes.Utils using (map-replicate)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)

@@ -32,7 +32,6 @@ private
   module VecPropEq {a} {A : Set a} = Data.Vec.Properties.UsingVectorEquality (P.setoid A)
   open VecPropEq using (xs++[]=xs)
 
-
 ----------------------------------------------------
 -- Plugs
 

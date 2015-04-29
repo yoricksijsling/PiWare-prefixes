@@ -22,7 +22,7 @@ open import PiWare.Plugs Gt using (id⤨)
 open import PiWarePrefixes.Plugs.Core {Gt = Gt} using (plug-FM; plug-FM-⟦⟧)
 open import PiWare.Simulation Gt using (⟦_⟧; W⟶W)
 open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq
-open import PiWarePrefixes.Simulation.Properties Gt
+open import PiWarePrefixes.Simulation.Properties {Gt = Gt}
 
 private
   import Data.Vec.Equality
