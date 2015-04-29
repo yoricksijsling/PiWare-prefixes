@@ -13,7 +13,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym)
 open import PiWare.Circuit {Gt = Gt}
 open import PiWare.Simulation Gt using (⟦_⟧)
 open import PiWarePrefixes.Simulation.Equality.Core {Gt = Gt} as SimEq using (Mk≈⟦⟧; easy-≈⟦⟧)
-open import PiWarePrefixes.Simulation.Properties Gt using (_⟫-cong_; _∥-cong_)
+open import PiWarePrefixes.Simulation.Properties {Gt = Gt} using (_⟫-cong_; _∥-cong_)
 open import PiWare.Synthesizable At using (untag)
 
 open Atomic At using (W)

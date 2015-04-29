@@ -1,7 +1,7 @@
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
-module PiWarePrefixes.Simulation.Properties {At : Atomic} (Gt : Gates At) where
+module PiWarePrefixes.Simulation.Properties {At : Atomic} {Gt : Gates At} where
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
@@ -48,6 +48,9 @@ id⤨-id w =
     id w
   ∎
   where open P.≡-Reasoning
+
+id⤨-cong : ∀ {i j} (p : i ≡ j) → id⤨ {i} ≈⟦⟧ id⤨ {j}
+id⤨-cong refl = ≈⟦⟧-refl
 
 {-
 plug-∘ : ∀ {i j o} (f :  i ⤪ j) (g : j ⤪ o) → Plug f ⟫ Plug g ≈⟦⟧ Plug (f ∘ g)
@@ -193,9 +196,22 @@ _∥-cong_ : ∀ {i¹ o¹ j¹ p¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ p¹} →
   ... | vn' | vm' | w' rewrite vn' | vm' | w' = sym w≡vn++vm
 
 -- (f₁ || f₂) ⟫ (g₁ || g₂) ≡ (f₁ ⟫ g₁) || (f₂ ⟫ g₂)
-⟫-∥-distrib : ∀ {i₁ m₁ o₁ i₂ m₂ o₂} (f₁ : ℂ i₁ m₁) (g₁ : ℂ m₁ o₁) (f₂ : ℂ i₂ m₂) (g₂ : ℂ m₂ o₂) → (f₁ ∥ f₂) ⟫ (g₁ ∥ g₂) ≈⟦⟧ (f₁ ⟫ g₁) ∥ (f₂ ⟫ g₂)
+⟫-∥-distrib : ∀ {i₁ m₁ o₁ i₂ m₂ o₂} →
+              (f₁ : ℂ i₁ m₁) (g₁ : ℂ m₁ o₁) (f₂ : ℂ i₂ m₂) (g₂ : ℂ m₂ o₂) →
+              (f₁ ∥ f₂) ⟫ (g₁ ∥ g₂) ≈⟦⟧ (f₁ ⟫ g₁) ∥ (f₂ ⟫ g₂)
 ⟫-∥-distrib {i₁} {m₁} f₁ g₁ f₂ g₂ = easy-≈⟦⟧ (VE.from-≡ ∘ imp)
   where
   imp : ∀ w → ⟦ f₁ ∥ f₂ ⟫ g₁ ∥ g₂ ⟧ w ≡ ⟦ (f₁ ⟫ g₁) ∥ (f₂ ⟫ g₂) ⟧ w
   imp w rewrite splitAt-++ _ (⟦ f₁ ⟧ (proj₁ (splitAt i₁ w))) (⟦ f₂ ⟧ (proj₁ (proj₂ (splitAt i₁ w)))) = refl
 -- seq-par-distrib can be generalized to arbitrary width and height..
+
+⟫-id⤨-left-distrib : ∀ {n i m o} {f : ℂ i m} {g : ℂ m o} →
+                     id⤨ {n} ∥ f ⟫ id⤨ {n} ∥ g ≈⟦⟧ id⤨ {n} ∥ (f ⟫ g)
+⟫-id⤨-left-distrib = ⟫-∥-distrib _ _ _ _
+        ⟨ ≈⟦⟧-trans ⟩ (⟫-right-identity id⤨) ∥-cong ≈⟦⟧-refl
+
+⟫-id⤨-right-distrib : ∀ {n i m o} {f : ℂ i m} {g : ℂ m o} →
+                     f ∥ id⤨ {n} ⟫ g ∥ id⤨ {n} ≈⟦⟧ (f ⟫ g) ∥ id⤨ {n}
+⟫-id⤨-right-distrib = ⟫-∥-distrib _ _ _ _
+         ⟨ ≈⟦⟧-trans ⟩ ≈⟦⟧-refl ∥-cong (⟫-right-identity id⤨)
+  
