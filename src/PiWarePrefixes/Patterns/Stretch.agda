@@ -45,6 +45,7 @@ module WithDirection (extract-insert : ExtractInsert) where
   in-FM as = record { op = in-table as ; op-<$> = in-<$> as }
     where
     postulate
+      -- Free property by parametricity
       in-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (size 1 as)) →
                in-table as (mapᵥ f xs) ≡ mapᵥ f (in-table as xs)
 
@@ -59,6 +60,7 @@ module WithDirection (extract-insert : ExtractInsert) where
   out-FM as = record { op = out-table as ; op-<$> = out-<$> as }
     where
     postulate
+      -- Free property by parametricity
       out-<$> : ∀ {n} (as : Vec ℕ n) {X Y} (f : X → Y) (xs : Vec X (n + size 0 as)) →
                out-table as (mapᵥ f xs) ≡ mapᵥ f (out-table as xs)
     
