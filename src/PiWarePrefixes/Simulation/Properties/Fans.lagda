@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -214,3 +215,4 @@ module WithAssociativity {plusℂ-assoc : Plusℂ-Assoc plusℂ} where
         ≈⟦⟧⟨ ((⤙-by-identity (fan (2 + m))) ∥-cong refl) ⟩
       fan (2 + m) ∥ id⤨ {n}
         ∎
+\end{code}

@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -290,3 +291,4 @@ stretch-flip {i} {k} f ys = Mk≈⟦⟧ (pi ys) helper
             ⟨ VE.trans ⟩ VE.from-≡ (cong₂ _++_ (sym (With-⤚.stretch-to-spec f (i ∷ ys) (proj₁ (splitAt′ (size 1 (i ∷ ys)) w₂))))
                                                (sym (id⤨-id (proj₂ (splitAt′ (size 1 (i ∷ ys)) w₂)))))
 
+\end{code}

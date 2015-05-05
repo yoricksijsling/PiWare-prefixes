@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -17,3 +18,4 @@ record ℂ-Monoid : Set where
   field
     plusℂ : Plusℂ
     plusℂ-assoc : Plusℂ-Assoc plusℂ
+\end{code}

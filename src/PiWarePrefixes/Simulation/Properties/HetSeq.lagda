@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -144,3 +145,4 @@ abstract
     f ∥ id⤨ {s} ⟫[ p ] g ∥ id⤨ {s} ≈⟦⟧ (_⟫[]_ f {q} g) ∥ id⤨ {s}
   ⟫[]-id⤨-right-distribᵣ {s} {p = p} = ⟫[]-∥-distrib _ P.refl
                               ⟨ trans ⟩ refl ∥-cong ⟫[]-right-identity id⤨
+\end{code}

@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -120,3 +121,4 @@ _⤛-cong_ {f = f} {g} {cs} {ds} f≈g cs≈ds = (f≈g ⤙-cong lem cs≈ds) �
       ≈⟦⟧⟨ ∥-id⤨ ⟩
     id⤨ {suc n}
       ∎
+\end{code}

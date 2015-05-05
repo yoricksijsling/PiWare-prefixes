@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -352,3 +353,4 @@ _⤜_ cs f = par-stretching cs ⟫ mapᵥ proj₁ cs ⤚ f
 --     where
 --     open Relation.Binary.PropositionalEquality.≡-Reasoning
 
+\end{code}

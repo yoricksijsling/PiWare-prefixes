@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -214,3 +215,4 @@ _∥-cong_ : ∀ {i¹ o¹ j¹ p¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ p¹} →
 ⟫-id⤨-right-distrib = ⟫-∥-distrib _ _ _ _
          ⟨ ≈⟦⟧-trans ⟩ ≈⟦⟧-refl ∥-cong (⟫-right-identity id⤨)
   
+\end{code}

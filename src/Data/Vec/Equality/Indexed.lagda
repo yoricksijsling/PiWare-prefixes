@@ -1,3 +1,4 @@
+\begin{code}
 module Data.Vec.Equality.Indexed where
 
 open import Data.Product hiding (map)
@@ -87,3 +88,4 @@ module PropositionalEquality {i} {I : Set i} {a} {A : I → Set (a ⊔ i)} where
 
   from-≡ : ∀ {n} {xs ys : Vec (∃ A) n} → xs ≡ ys → xs ≈ ys
   from-≡ P.refl = refl _
+\end{code}

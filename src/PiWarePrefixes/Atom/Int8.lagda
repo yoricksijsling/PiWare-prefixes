@@ -1,3 +1,4 @@
+\begin{code}
 module PiWarePrefixes.Atom.Int8 where
 
 open import Data.Fin using (Fin)
@@ -16,3 +17,4 @@ Atomic-Int8 = record {
     ; inv-left  = λ _ → refl
     ; inv-right = λ _ → refl
     }
+\end{code}

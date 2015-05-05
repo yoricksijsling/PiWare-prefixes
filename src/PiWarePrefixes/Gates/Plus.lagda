@@ -1,3 +1,4 @@
+\begin{code}
 module PiWarePrefixes.Gates.Plus where
 
 open import Data.Nat using (ℕ; _+_)
@@ -38,3 +39,4 @@ Plus = record {
      ; |out|   = |out|
      ; spec    = spec
      }
+\end{code}

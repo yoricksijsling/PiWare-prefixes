@@ -1,3 +1,4 @@
+\begin{code}
 module PiWarePrefixes.Utils where
 
 open import Data.Fin using (Fin; zero; suc)
@@ -118,3 +119,4 @@ vec-functor {ℓ} n = rawFunctor (vec-applicative {ℓ} {n})
 
 -- vec-morphism : ∀ {a} → ℕ → ℕ → Set _
 -- vec-morphism {a} i o = Morphism (vec-functor {a} i) (vec-functor {a} o)
+\end{code}

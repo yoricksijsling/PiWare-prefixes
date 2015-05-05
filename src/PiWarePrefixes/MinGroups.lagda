@@ -1,3 +1,4 @@
+\begin{code}
 module PiWarePrefixes.MinGroups where
 
 open import Data.Fin as Fin using (Fin)
@@ -148,3 +149,4 @@ module WithExtractInsert (extract-insert : ExtractInsert) where
       (gs : MinGroups A (suc i) (as ++ bs)) →
       extract-map (uncurry _++_ ∘ map× f₁ f₂ ∘ splitAt′ m) gs ≡
         (uncurry _++ᵍ_ ∘ map× (extract-map f₁) (extract-map f₂) ∘ splitᵍ as) gs
+\end{code}

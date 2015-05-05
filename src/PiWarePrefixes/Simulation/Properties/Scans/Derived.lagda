@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
@@ -180,3 +181,4 @@ fib-scan-is-scan (suc (suc n)) = begin
     ≈⟦⟧⟨ scan-cong (cong (flip _+_ (fib n)) (P.sym (fib-is-suc n))) ⟩
   scan (fib (2 + n))
     ∎
+\end{code}

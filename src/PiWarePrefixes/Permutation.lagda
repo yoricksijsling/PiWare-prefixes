@@ -1,3 +1,4 @@
+\begin{code}
 module PiWarePrefixes.Permutation where
 
 -- Roughly based on https://github.com/ruisb/PiGraph/blob/master/Permutation.agda
@@ -20,7 +21,7 @@ As an example, #k ◀ id is
   image:         k   0       i-1       k-1   (k+1)       j         N
 --}
 
-data Perm : ℕ → Set where
+data Perm : ℕ → Set where
   ε    : Perm 0
   _◀_ : {n : ℕ} → (v : Fin (suc n)) → (σ : Perm n) → Perm (suc n)
 
@@ -223,3 +224,4 @@ forget-*-identity (suc k) (v ◀ σ)
 
 §-left-inverse : ∀ {n} (σ : Perm n) → ∀ x → σ * § (σ § (x)) ≡ x
 §-left-inverse σ x rewrite sym (∙-§ (σ *) σ x) | *-∙-left-inverse σ = i-§ x
+\end{code}

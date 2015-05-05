@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
@@ -37,3 +38,4 @@ _⌷_ {m = m} {n} f g = f ∥ g ⟫[ P.sym (+-suc m n) ] id⤨ {m} ∥ fan (suc 
 scan-spec : ∀ {n} → W⟶W n n
 scan-spec [] = []
 scan-spec (x ∷ xs) = x ∷ mapᵥ (_⊕_ x) (scan-spec xs)
+\end{code}

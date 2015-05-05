@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -45,3 +46,4 @@ plug-FM-⟦⟧ {i} M w = begin
 
 rewire⤨ : ∀ {i o} → (p : i ≡ o) → 𝐂 i o
 rewire⤨ refl = id⤨
+\end{code}

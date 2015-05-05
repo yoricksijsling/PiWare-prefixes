@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -86,3 +87,4 @@ infixl 4 _⟫●_  _●⟫_
 ≈⟦⟧-cong (cxts ●⟫ g≈g) holes = (≈⟦⟧-cong cxts holes) ⟫-cong g≈g
 ≈⟦⟧-cong (f≈f ∥● cxts) holes = f≈f ∥-cong (≈⟦⟧-cong cxts holes)
 ≈⟦⟧-cong (cxts ●∥ g≈g) holes = (≈⟦⟧-cong cxts holes) ∥-cong g≈g
+\end{code}

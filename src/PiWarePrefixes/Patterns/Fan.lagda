@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 open import PiWarePrefixes.Circuit.Monoid using (Plusℂ)
@@ -68,3 +69,4 @@ abstract
 fan-spec : ∀ {n} → W⟶W n n
 fan-spec [] = []
 fan-spec (x ∷ xs) = x ∷ mapᵥ (_⊕_ x) xs
+\end{code}

@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -23,3 +24,4 @@ zipWith : ∀ {k n cs} → ℂ {cs} k 1 → ℂ {cs} (k * n) (1 * n)
 zipWith {k} {n} f with (zip⤨ {k} {n} ⟫ parsN {n} f)
 zipWith {k} {n} f | z rewrite *-comm n 1 | +-right-identity n = z
 -}
+\end{code}

@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -123,3 +124,4 @@ module ≈⟦⟧-Reasoning where
   _∎ : ∀ {i o} (f : ℂ i o) → f ≈⟦⟧ f
   _∎ _ = ≈⟦⟧-refl
 
+\end{code}

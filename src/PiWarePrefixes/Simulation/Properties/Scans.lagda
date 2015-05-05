@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
@@ -141,3 +142,4 @@ _⌷-cong_ {f₁ = f₁} {g₁} {f₂ = f₂} {g₂} f≈f g≈g = begin
     ≈⟦⟧⟨ ▱-right-identity f ⟩
   f
     ∎
+\end{code}

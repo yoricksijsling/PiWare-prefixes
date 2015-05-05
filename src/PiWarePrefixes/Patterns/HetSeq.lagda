@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 
@@ -30,3 +31,4 @@ abstract
 
 _⟫[]_ : ∀ {i m n o σω} (f : ℂ {σω} i m) {p : m ≡ n} (g : ℂ {σω} n o) → ℂ {σω} i o
 _⟫[]_ f {p} g = f ⟫[ p ] g
+\end{code}

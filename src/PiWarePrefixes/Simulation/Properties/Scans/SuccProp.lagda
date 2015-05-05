@@ -1,3 +1,4 @@
+\begin{code}
 open import PiWare.Atom using (Atomic; module Atomic)
 open import PiWare.Gates using (Gates)
 open import PiWarePrefixes.Circuit.Monoid using (module ℂ-Monoid; ℂ-Monoid)
@@ -142,3 +143,4 @@ open SimEq.≈⟦⟧-Reasoning
      ≈⟦⟧⟨⟩
    scan-succ f ▱ scan-succ g
      ∎
+\end{code}
