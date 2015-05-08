@@ -1,0 +1,108 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+%% Agda
+\usepackage{../latex/agda}
+\usepackage{catchfilebetweentags}
+\newcommand{\AK}{\AgdaKeyword}
+\newcommand{\AS}{\AgdaString}
+\newcommand{\AY}{\AgdaSymbol}
+\newcommand{\AN}{\AgdaNumber}
+\newcommand{\AB}{\AgdaBound}
+\newcommand{\AO}{\AgdaOperator}
+\newcommand{\AI}{\AgdaInductiveConstructor}
+\newcommand{\AC}{\AgdaCoinductiveConstructor}
+\newcommand{\AD}{\AgdaDatatype}
+\newcommand{\AF}{\AgdaFunction}
+\newcommand{\AM}{\AgdaModule}
+\newcommand{\AL}{\AgdaField}
+\newcommand{\AR}{\AgdaArgument}
+\newcommand{\AT}{\AgdaIndent}
+\newcommand{\ARR}{\AgdaRecord}
+\newcommand{\AP}{\AgdaPostulate}
+
+% \usepackage{unicode-math}
+% \usepackage{mathtools}
+% \usepackage{amsmath}
+
+%--------------------------------------------------
+
+% ------- REASONABLY WORKING
+% \newenvironment{codeBlock}
+% {\noindent\ignorespaces\advance\leftskip\mathindent\AgdaCodeStyle\pboxed}
+% {\endpboxed\par\noindent\ignorespacesafterend}
+
+% \newenvironment{codeInline}
+% {\renewcommand{\>}[1][0]{\unskip\ignorespaces} % Disable polytable columns
+%  \newcommand{\<}[1][0]{\unskip\ignorespaces}
+%  \renewcommand{\AgdaIndent}[2]{\unskip\ignorespaces}
+%  \noindent\ignorespaces\AgdaCodeStyle}
+% {\ignorespacesafterend}
+
+% \newcommand{\InsertCodeInline}[2][Report.tex]{ % --exactly one skip
+% \begin{codeInline}\ExecuteMetaData[../latex/#1]{#2}\end{codeInline}}
+% \newcommand{\InsertCode}[2][Report.tex]{
+%   \medskip
+%   \begin{codeBlock}\ExecuteMetaData[../latex/#1]{#2}\end{codeBlock}
+
+%   \medskip}
+% --------
+
+
+\newcommand{\InsertCodeInline}[2][Report.tex]{\codeinlinetrue\ExecuteMetaData[../latex/#1]{#2}}
+\newcommand{\InsertCode}[2][Report.tex]{
+  \codeinlinefalse
+  \medskip
+  \ExecuteMetaData[../latex/#1]{#2}
+
+  \medskip}
+
+
+%--------------------------------------------------
+
+\setmainfont[ItalicFont = xits-italic.otf]{xits-regular.otf}
+\setmathfont{xits-math.otf}
+\setsansfont[Scale=MatchLowercase]{DejaVuSans.ttf}
+
+\newfontfamily{\xitsfont}[Scale=MatchLowercase]{xits-regular.otf}
+
+\DeclareTextFontCommand{\textxits}{\xitsfont}
+
+\usepackage{newunicodechar}
+
+\newunicodechar{●}{\textxits{•}}
+\newunicodechar{⤙}{\textxits{⤙}}
+\newunicodechar{⤚}{\textxits{⤚}}
+\newunicodechar{⤛}{\textxits{⤛}}
+\newunicodechar{⤜}{\textxits{⤜}}
+\newunicodechar{⤨}{\textxits{⤨}}
+\newunicodechar{⤪}{\textxits{⤪}}
+\newunicodechar{⌷}{\textxits{$\vrectangle$}}
+% \newunicodechar{▱}{\textxits{▱}}
+% \newunicodechar{▱}{\textxits{\raisebox{\depth}{\rotatebox{105}{▱}}}}
+\newunicodechar{▱}{\textxits{\rotatebox[origin=c]{105}{▱}}}
+
+%--------------------------------------------------
+
+\title{Parallel Prefix Sums In An Embedded Hardware Description
+Language}
+\date{\today}
+\author{Yorick Sijsling}
+
+\begin{document}
+
+\maketitle
+
+\begin{flushright}
+\emph{Supervised by} Wouter Swierstra\\
+\emph{Thanks to} João Paulo Pizani Flor
+\end{flushright}
+
+
+\input{body.tex}
+
+\end{document}
