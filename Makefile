@@ -1,10 +1,12 @@
 SRC=src
-SRC_PIWARE=../piware-agda/src
+# BE AWARE that .agdai files might be added/modified/removed in these folders
+SRC_PIWARE=piware-agda/src
+SRC_STDLIB=agda-stdlib/src
 
 INCLUDES=${AGDA_INCLUDES} \
          ${SRC} \
          ${SRC_PIWARE} \
-         ../agda-stdlib/src
+         ${SRC_STDLIB}
 
 MODULES_PIWARE=PiWare/Circuit
 
@@ -55,6 +57,7 @@ $(SRC)/%.agdai: $(SRC)/%.agda
 	agda $(INCLUDE_PARAMS) $<
 
 cleancode:
+	find $(SRC_STDLIB) -name '*.agdai' -delete
 	find $(SRC_PIWARE) -name '*.agdai' -delete
 	find $(SRC) -name '*.agdai' -delete
 

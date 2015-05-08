@@ -2,3 +2,10 @@
 .#*
 MAlonzo
 .projectile
+.DS_Store
+latex/Data
+latex/PiWare
+latex/PiWarePrefixes
+latex/Report.tex
+latex/auto
+report/auto

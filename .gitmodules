@@ -1,0 +1,6 @@
+[submodule "piware-agda"]
+	path = piware-agda
+	url = git@github.com:joaopizani/piware-agda.git
+[submodule "agda-stdlib"]
+	path = agda-stdlib
+	url = https://github.com/agda/agda-stdlib.git
