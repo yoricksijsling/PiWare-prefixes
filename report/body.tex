@@ -10,18 +10,18 @@ Scans are fundamental building blocks for many efficient parallel
 algorithms including integer addition, sorting and calculation of
 convex hulls.
 
-We use PiWare, an Embedded Domain-Specific Language (EDSL) for hardware
+We use Π-Ware, an Embedded Domain-Specific Language (EDSL) for hardware
 description, to build a representation of scans in the dependently-typed
-language Agda. We prove the the correctness of this implementation and
-prove properties about how scan circuits can be combined to create new
-scan circuits.
+language Agda. We prove the correctness of this implementation and
+prove properties about how  scan circuits can be combined to create
+new scan circuits.
 
 \section{Background}\label{introduction}
 
-Π-Ware is a domain-specific language for hardware circuits embedded in
-Agda.
-It was created as part of the João Paulo Pizano Flor's master thesis
-and is in active development.
+Π-Ware (pronounced piware) is a domain-specific language for hardware
+circuits embedded in Agda.
+It was created by João Paulo Pizani Flor's as part of his master's
+thesis\cite{pizani14} and is in active development.
 
 In Π-Ware, we can describe and simulate circuits.
 The embedding in Agda can be used to do formal proofs about their
@@ -69,11 +69,12 @@ Values flow from top to bottom.
 At the top are the inputs, at the bottom are outputs.
 The circles are operation nodes where the $\oplus$ operator is
 applied.
-For any given size, different circuits can exist which implement a scan.
+For any number of inputs, different circuits can exist which implement
+a scan.
 
-In \emph{An algebra of scans}, Ralf Hinze describes how a scan circuit
-can be constructed from smaller components using tools like
-fans, stretching, horizontal (parallel) composition and vertical
+In An algebra of scans\cite{hinze04}, Ralf Hinze describes how a
+scan circuit can be constructed from smaller components using tools
+like fans, stretching, horizontal (parallel) composition and vertical
 composition (sequencing).
 The horizontal and vertical composition are also native constructions
 in Π-ware.
@@ -94,7 +95,7 @@ While the biggest deliverable is the code itself, this report provides
 a rationale for some of the choices and serves as documentation for
 the delivered code.
 
-\section{Additions to PiWare}\label{additions-to-piware}
+\section{Additions to Π-Ware}\label{additions-to-piware}
 
 \subsection{Combinationality}\label{combinationality}
 
@@ -141,7 +142,7 @@ separate proofs were needed to show that they were combinational.
 We made two important observations:
 
 \begin{itemize}
-\item \AF{comb} \emph{influences how circuits can be constructed},
+\item \AF{comb} \emph{restricts which circuits can be constructed},
   just like the input and output size.
 \item Combinationality is something which you \emph{require} for
   certain functions, but you usually don't need to calculate whether a
@@ -163,8 +164,8 @@ sequential and the input circuit is required to be combinational.
 
 This solution solves all the practical issues mentioned previously.
 
-The approach is similar to what Conor McBride does in 'How to Keep
-Your Neighbours in Order'.
+The approach is similar to what Conor McBride does in How to Keep
+Your Neighbours in Order\cite{mcbride14}.
 
 \subsection{Equality}\label{equality}
 
@@ -183,7 +184,7 @@ relationship:
 \item E4. Circuits can be equal if their sizes are not definitionally
   the same.
 For example in the property \AB{f} \AI{∥} \AF{id⤨} \AN{0} \AD{≋}
-\AB{f}, where \AF{id} \AB{n} is the identity circuit with size \AB{n}.
+\AB{f}, where \AF{id⤨} \AB{n} is the identity circuit with size \AB{n}.
 The left hand side is of size \AB{f} \AF{+} \AN{0}, but the right hand
 side has size \AB{f}.
 From the equality we should be able to obtain proofs that the sizes do
@@ -230,11 +231,11 @@ A prettier solution is to not use propositional equality on the
 vectors.
 The standard library provides a semi-heterogeneous vector
 equality \AF{≈ᵥ} where the lengths of the vectors don't have to be
-the same. From an proof that two vectors are equal in this way,
+the same. From a proof that two vectors are equal in this way,
 \AB{xs} \AF{≈ᵥ} \AB{ys}, we can obtain a proof that the lengths of the two
 vectors are equal.
-If you're lucky you can rewrite your goals with this proof, then the
-lengths of the vectors become equal and you can convert the
+When you are lucky you can rewrite your goals with this proof, then
+the lengths of the vectors become equal and you can convert the
 semi-heterogenous equality to a propositional equality \AB{xs} \AD{≡}
 \AB{ys}.
 Using the semi-heterogeneous vector equality we arrive at the
@@ -263,7 +264,7 @@ have to return anything.
 Here is a proof that the identity circuit of size \AN{0} is equal to
 the identity circuit of size \AN{1} (it should not be):
 
-\InsertCode{eq-e-incomplete}
+\InsertCode{eq-e-inconsistent}
 
 To solve this problem, we need to make sure that the domain can never
 be empty.
@@ -295,9 +296,10 @@ behavior, while the whole circuit keeps the same behavior.
 
 \subsubsection{Congruence under X}\label{congruence-under-x}
 
-The final solution to this problem is as follows:
-We chose to define separate \AF{X-cong}-functions for a lot of
-functions which combine or return circuits.
+This notion was inmplemented by defining separate
+\AF{X-cong}-functions for a lot of functions which combine or return
+circuits. A function \AF{X-cong} tells us that \AF{X} \emph{preserves}
+behavioral equality.
 
 \InsertCode{seq-and-par-cong}
 
@@ -320,10 +322,12 @@ Now we can define a function similar to \AF{cong}:
 \InsertCode{eq-cong}
 
 A disadvantage of this particular definition is that the sizes of
-\AB{f} and \AB{g} must be the same.
-We want to be able to give \AB{f} and \AB{g} different sizes.
-A context only works on one size, so we need two contexts which are
-equal.
+\AB{f} and \AB{g} must be definitionally equal.
+We want to be able to give \AB{f} and \AB{g} definitionally different
+sizes.
+A context only works on circuits of one particular size, so we need
+a context for both \AB{f} and \AB{g}, and both must do the same thing
+(they are equal in a certain sense).
 Then we can plug one of the contexts with \AB{f} and the other with
 \AB{g}.
 If our context equality is \AD{≈ₓ}, we can define:
@@ -374,8 +378,8 @@ rewiring function of type \AF{fin} \AB{o} \AY{→} \AF{fin} \AB{i}.
 For any output wire, this function tells you which input wire it is
 connected to.
 The evaluation of a plug was basically \AF{⟦} \AI{Plug} \AB{p} \AF{⟧}
-\AB{w} \AY{=} \AF{tabulate} \AY{(λ} \AB{fin} \AY{→} \AF{lookup}
-\AY{(}\AF{p} \AB{fin}\AY{)} \AB{w}\AY{)}.
+\AB{w} \AY{=} \AF{tabulate} \AY{(λ} \AB{n} \AY{→} \AF{lookup}
+\AY{(}\AF{p} \AB{n}\AY{)} \AB{w}\AY{)}.
 Doing proofs with this higher order representation can get quite
 complicated, because the function is used as a higher order argument
 within the \AF{tabulate} and \AF{lookup}.
@@ -672,7 +676,7 @@ combinator \AF{▱} and horizontal scan combinator \AF{⌷}:
 \InsertCode{scan-combinators}
 
 We were able to prove for both combinators that if we use them to
-combine to scans, we get another scan:
+combine two scans, we get another scan:
 
 \InsertCode{scan-combinator-proofs}
 

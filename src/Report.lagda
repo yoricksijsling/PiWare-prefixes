@@ -93,12 +93,12 @@ module Eq where
 \end{code}
 %</eq-e>
 
-%<*eq-e-incomplete>
+%<*eq-e-inconsistent>
 \begin{code}
-  ≊-incomplete : id⤨ 0 ≊ id⤨ 1
-  ≊-incomplete ()
+  ≊-inconsistent : id⤨ 0 ≊ id⤨ 1
+  ≊-inconsistent ()
 \end{code}
-%</eq-e-incomplete>
+%</eq-e-inconsistent>
 
 %<*eq>
 \begin{code}
@@ -122,12 +122,12 @@ module Cong where
 
 %<*seq-and-par-cong>
 \begin{code}
-    _⟫-cong_ : ∀ {i¹ m¹ o¹} {c¹ : ℂ i¹ m¹} {d¹ : ℂ m¹ o¹} →
-               ∀ {i² m² o²} {c² : ℂ i² m²} {d² : ℂ m² o²} →
-               c¹ ≋ c² → d¹ ≋ d² → c¹ ⟫ d¹ ≋ c² ⟫ d²
-    _∥-cong_ : ∀ {i¹ o¹ j¹ p¹} {c¹ : ℂ i¹ o¹} {d¹ : ℂ j¹ p¹} →
-               ∀ {i² o² j² p²} {c² : ℂ i² o²} {d² : ℂ j² p²} →
-               c¹ ≋ c² → d¹ ≋ d² → c¹ ∥ d¹ ≋ c² ∥ d²
+    _⟫-cong_ : ∀ {i₁ m₁ o₁} {c₁ : ℂ i₁ m₁} {d₁ : ℂ m₁ o₁} →
+               ∀ {i₂ m₂ o₂} {c₂ : ℂ i₂ m₂} {d₂ : ℂ m₂ o₂} →
+               c₁ ≋ c₂ → d₁ ≋ d₂ → c₁ ⟫ d₁ ≋ c₂ ⟫ d₂
+    _∥-cong_ : ∀ {i₁ o₁ j₁ p₁} {c₁ : ℂ i₁ o₁} {d₁ : ℂ j₁ p₁} →
+               ∀ {i₂ o₂ j₂ p₂} {c₂ : ℂ i₂ o₂} {d₂ : ℂ j₂ p₂} →
+               c₁ ≋ c₂ → d₁ ≋ d₂ → c₁ ∥ d₁ ≋ c₂ ∥ d₂
 \end{code}
 %</seq-and-par-cong>
 

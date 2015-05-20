@@ -71,7 +71,7 @@ latex/%.tex: $(SRC_PIWARE)/%.lagda
 latex/%.tex: $(SRC)/%.lagda
 	agda $(AGDA_PARAMS) $<
 
-report/main.pdf: $(MODULES_ALL:%=latex/%.tex) latex/agda.sty report/main.tex report/body.tex
+report/main.pdf: $(MODULES_ALL:%=latex/%.tex) latex/agda.sty report/main.tex report/body.tex report/main.bib
 	latexmk -xelatex -cd report/main.tex
 
 cleanreport:
